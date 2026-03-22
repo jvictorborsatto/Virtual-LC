@@ -1,0 +1,2770 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Virtual LC</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;700&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap');
+:root{
+  /* Professional LC software palette — clean, scientific, light */
+  --bg:#f0f2f5;--surface:#ffffff;--surface2:#f7f8fa;--surface3:#eef0f3;--border:#d0d5de;
+  --border2:#b8bfcc;--accent:#0066cc;--accent2:#7c3aed;--accent3:#15803d;
+  --accent4:#b45309;--danger:#c0392b;--warn:#c27200;--info:#1a6fba;
+  --text:#1a1d23;--text2:#3d4452;--text3:#7a8296;--text4:#a8b0c0;
+  --header-bg:#ffffff;--header-text:#1a1d23;--header-accent:#0066cc;
+  --peak-blue:#1a5fb4;--peak-fill:rgba(26,95,180,0.08);
+  --mono:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans',sans-serif;
+  --shadow:0 1px 3px rgba(0,0,0,.10),0 1px 2px rgba(0,0,0,.06);
+  --shadow-lg:0 4px 16px rgba(0,0,0,.12),0 2px 4px rgba(0,0,0,.08);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:13px;display:flex;flex-direction:column}
+
+/* ── HEADER ── */
+header{display:flex;align-items:center;justify-content:space-between;padding:0 20px;height:46px;border-bottom:2px solid var(--border);background:var(--header-bg);flex-shrink:0;gap:8px;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.logo{font-family:var(--mono);font-size:13px;color:var(--header-accent);letter-spacing:2px;display:flex;align-items:center;gap:10px;font-weight:700}
+.logo-icon{width:22px;height:22px;flex-shrink:0}
+.logo-icon svg{width:100%;height:100%}
+.badge{font-family:var(--mono);font-size:9px;letter-spacing:1px;padding:2px 8px;border-radius:2px;border:1px solid var(--border2);color:var(--text3);background:var(--surface2)}
+.header-tabs{display:flex;gap:1px;background:var(--surface3);border-radius:4px;padding:3px;border:1px solid var(--border)}
+.htab{font-family:var(--mono);font-size:9px;letter-spacing:1px;padding:5px 14px;border-radius:3px;border:none;background:transparent;color:var(--text3);cursor:pointer;transition:all .2s;text-transform:uppercase;font-weight:500}
+.htab.on{background:var(--accent);color:#fff;box-shadow:0 1px 4px rgba(0,102,204,.4)}
+.htab:hover:not(.on){color:var(--text);background:rgba(0,0,0,.05)}
+
+/* ── LAYOUT ── */
+.layout{display:flex;flex:1;overflow:hidden}
+.sb{width:336px;min-width:336px;background:var(--surface);border-right:1px solid var(--border);overflow-y:auto;display:flex;flex-direction:column}
+.sb::-webkit-scrollbar{width:4px}
+.sb::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+
+/* ── PANEL SYSTEM ── */
+.main-panel{display:none;flex:1;overflow:hidden;flex-direction:column}
+.main-panel.on{display:flex}
+
+/* ── SIDEBAR SECTIONS ── */
+.sec{border-bottom:1px solid var(--border);padding:10px 13px}
+.st{font-family:var(--mono);font-size:9px;letter-spacing:2px;color:var(--text3);text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.st::before{content:'';width:3px;height:3px;border-radius:50%;background:var(--accent);box-shadow:0 0 4px rgba(0,102,204,.4)}
+.st.warn::before{background:var(--warn)}
+.st.green::before{background:var(--accent3)}
+
+label{display:block;font-size:11px;color:var(--text2);margin-bottom:3px;font-weight:500}
+input[type=number],input[type=text],select{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:3px;padding:4px 7px;color:var(--text);font-family:var(--mono);font-size:11px;outline:none;transition:border-color .15s,box-shadow .15s;-moz-appearance:textfield}
+input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
+input:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(0,102,204,.15)}
+select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%237a8296'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;padding-right:24px}
+select option{background:var(--surface)}
+
+.r2{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.r3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px}
+.f{margin-bottom:6px}
+input[type=range]{width:100%;accent-color:var(--accent);cursor:pointer;height:4px}
+.cbrow{display:flex;align-items:center;gap:7px;margin-bottom:5px}
+input[type=checkbox]{accent-color:var(--accent);width:13px;height:13px;cursor:pointer;flex-shrink:0}
+.div{height:1px;background:var(--border);margin:7px 0}
+.itx{font-size:10px;color:var(--text3);line-height:1.55}
+.itx b{color:var(--text2)}
+.itx .hi{color:var(--accent)}
+.itx .warn{color:var(--warn)}
+.itx .ok{color:var(--accent3)}
+.itx .danger{color:var(--danger)}
+
+/* ── BUTTONS ── */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:5px;padding:7px 12px;border-radius:3px;border:none;cursor:pointer;font-family:var(--mono);font-size:10px;letter-spacing:.5px;font-weight:600;transition:all .15s;text-transform:uppercase;white-space:nowrap}
+.bp{background:var(--accent);color:#fff}.bp:hover{background:#0052a3;box-shadow:0 2px 8px rgba(0,102,204,.3)}
+.bs{background:transparent;border:1px solid var(--border2);color:var(--text2)}.bs:hover{border-color:var(--accent);color:var(--accent);background:rgba(0,102,204,.05)}
+.bpu{background:var(--accent2);color:#fff}.bpu:hover{background:#6d28d9}
+.bg{background:var(--accent3);color:#fff}.bg:hover{background:#166534}
+.bw{background:var(--warn);color:#fff}.bw:hover{background:#92400e}
+.bd{background:var(--danger);color:#fff}.bd:hover{background:#991b1b}
+.bsm{padding:4px 9px;font-size:9px}
+.bfw{width:100%}
+.brow{display:flex;gap:6px}
+
+/* ── COMPOUND CARDS ── */
+.cpd-card{background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:8px 10px;margin-bottom:6px;transition:border-color .15s,box-shadow .15s}
+.cpd-card:hover{border-color:var(--accent);box-shadow:0 0 0 2px rgba(0,102,204,.08)}
+.cpd-head{display:flex;align-items:center;gap:7px}
+.cpd-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.cpd-name{flex:1;background:transparent;border:none;color:var(--text);font-family:var(--mono);font-size:10px;outline:none;cursor:text;border-bottom:1px solid transparent;transition:border-color .15s;padding:1px 2px}
+.cpd-name:focus{border-bottom-color:var(--accent)}
+.cpd-rm{background:none;border:none;color:var(--text4);cursor:pointer;font-size:12px;padding:0 2px;margin-left:auto;flex-shrink:0}
+.cpd-rm:hover{color:var(--danger)}
+.cpd-pol-row{display:flex;align-items:center;gap:6px;margin-top:6px}
+.cpd-pol-row label{margin:0;white-space:nowrap;font-size:10px;min-width:30px}
+.cpd-pol-row input[type=range]{flex:1;height:3px}
+.cpd-psa-num{width:48px;min-width:48px;font-size:10px;padding:2px 4px;text-align:center}
+.pol-badge{font-size:9px;font-family:var(--mono);padding:1px 5px;border-radius:2px;border:1px solid;white-space:nowrap;font-weight:600}
+.pol-low{color:#92400e;border-color:#f59e0b;background:#fef3c7}
+.pol-mid{color:#1e40af;border-color:#93c5fd;background:#eff6ff}
+.pol-hi{color:#166534;border-color:#86efac;background:#f0fdf4}
+
+/* ── PARAM BLOCKS ── */
+.param-block{background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:8px 10px;margin-bottom:7px}
+.param-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.param-title{font-family:var(--mono);font-size:9px;letter-spacing:1px;color:var(--text2);text-transform:uppercase;font-weight:600}
+.cv-toggle{display:flex;border:1px solid var(--border2);border-radius:3px;overflow:hidden}
+.cv-btn{font-family:var(--mono);font-size:8px;padding:3px 8px;border:none;background:transparent;color:var(--text3);cursor:pointer;transition:all .15s;letter-spacing:.5px}
+.cv-btn.on{background:var(--accent);color:#fff;font-weight:700}
+.param-const{display:block}
+.param-var{display:none}
+.param-var.show{display:block}
+.param-const.hide{display:none}
+.var-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;margin-top:5px}
+.var-row label{font-size:10px}
+
+/* ── RESULT LIST ── */
+.rlist{max-height:160px;overflow-y:auto;border:1px solid var(--border);border-radius:4px;margin-top:6px}
+.rlist::-webkit-scrollbar{width:4px}
+.rlist::-webkit-scrollbar-thumb{background:var(--border2)}
+.ri{display:flex;align-items:center;padding:5px 9px;border-bottom:1px solid var(--border);font-family:var(--mono);font-size:10px;color:var(--text2);gap:7px;cursor:pointer;transition:background .1s}
+.ri:last-child{border-bottom:none}
+.ri:hover{background:var(--surface2)}
+.ri.act{background:#e8f0fb;color:var(--accent);border-left:2px solid var(--accent)}
+.sdot{width:6px;height:6px;border-radius:50%;background:var(--accent3);flex-shrink:0}
+
+/* ── CANVAS AREA ── */
+.carea{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.ctbar{display:flex;align-items:center;justify-content:space-between;padding:5px 14px;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0;gap:8px;flex-wrap:wrap}
+.cinfo{font-family:var(--mono);font-size:9px;color:var(--text3);display:flex;gap:14px;flex-wrap:wrap}
+.cinfo span{color:var(--accent);font-weight:700}
+.cinfo .warn-val{color:var(--warn);font-weight:700}
+.cinfo .ok-val{color:var(--accent3);font-weight:700}
+.cinfo .danger-val{color:var(--danger);font-weight:700}
+.atbar{display:flex;align-items:center;gap:5px;padding:4px 14px;border-bottom:1px solid var(--border);background:var(--surface2);flex-shrink:0;flex-wrap:wrap}
+.atbar-label{font-family:var(--mono);font-size:9px;color:var(--text3);letter-spacing:1px;margin-right:3px;white-space:nowrap;font-weight:600}
+.ann-btn{font-family:var(--mono);font-size:8px;padding:3px 8px;border-radius:3px;border:1px solid var(--border2);background:var(--surface);color:var(--text2);cursor:pointer;transition:all .15s;letter-spacing:.5px}
+.ann-btn.on{border-color:var(--accent);color:var(--accent);background:#e8f0fb}
+.ann-btn:hover:not(.on){border-color:var(--text2);color:var(--text);background:var(--surface)}
+.cwrap{flex:1;overflow:auto;padding:16px;display:flex;align-items:flex-start;justify-content:center;background:var(--bg)}
+#cv{background:#fff;border-radius:3px;box-shadow:var(--shadow-lg);display:block;border:1px solid var(--border)}
+#cv2,#cv3{background:#fff;border-radius:3px;box-shadow:var(--shadow-lg);display:block;border:1px solid var(--border)}
+
+/* ── OVERLAY BUTTONS ── */
+.overlay-row{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.overlay-btn{font-family:var(--mono);font-size:8px;padding:3px 8px;border-radius:3px;border:1px solid var(--border2);background:var(--surface);color:var(--text3);cursor:pointer;transition:all .15s}
+.overlay-btn.on{border-color:var(--accent2);color:var(--accent2);background:#f5f0ff}
+.overlay-btn:hover:not(.on){border-color:var(--text2);color:var(--text2)}
+
+/* ── NOTIFICATION ── */
+#notif{position:fixed;bottom:16px;right:16px;background:var(--surface);border:1px solid var(--accent3);border-radius:4px;padding:8px 14px;font-family:var(--mono);font-size:10px;color:var(--accent3);box-shadow:var(--shadow-lg);transform:translateY(8px);opacity:0;transition:all .25s;z-index:200;pointer-events:none;max-width:300px}
+#notif.show{transform:translateY(0);opacity:1}
+#notif.warn{border-color:var(--warn);color:var(--warn)}
+#notif.danger{border-color:var(--danger);color:var(--danger)}
+
+/* ── MODAL ── */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:300;display:none;align-items:center;justify-content:center}
+.modal-bg.on{display:flex}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:22px;width:520px;max-width:95vw;max-height:85vh;overflow-y:auto;box-shadow:var(--shadow-lg)}
+.modal h3{font-family:var(--mono);font-size:11px;letter-spacing:2px;color:var(--accent);margin-bottom:14px;text-transform:uppercase;font-weight:700;padding-bottom:10px;border-bottom:1px solid var(--border)}
+.modal-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+.modal-close{float:right;background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px;margin-top:-6px;line-height:1}
+.modal-close:hover{color:var(--danger)}
+
+/* ── TOGGLE ROW ── */
+.trow{display:flex;border:1px solid var(--border2);border-radius:4px;overflow:hidden;margin-bottom:6px}
+.tgl{flex:1;padding:5px 3px;text-align:center;font-family:var(--mono);font-size:9px;letter-spacing:.8px;cursor:pointer;border:none;background:transparent;color:var(--text3);transition:all .15s;font-weight:500}
+.tgl.on{background:var(--accent);color:#fff;font-weight:700}
+
+/* ── PEAK CARDS (Customize tab) ── */
+.pkcard{background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:8px 10px;margin-bottom:6px}
+.pkhead{display:flex;align-items:center;justify-content:space-between;cursor:pointer}
+.pklbl{font-family:var(--mono);font-size:10px;color:var(--accent);display:flex;align-items:center;gap:6px}
+.pkdot{width:7px;height:7px;border-radius:50%}
+.pkrm{background:none;border:none;color:var(--text4);cursor:pointer;font-size:13px;padding:0 2px}
+.pkrm:hover{color:var(--danger)}
+.pkbody{display:none;margin-top:8px}
+.pkbody.open{display:block}
+.crow{display:flex;gap:5px;margin-top:3px}
+.csw{width:15px;height:15px;border-radius:3px;cursor:pointer;border:2px solid transparent;transition:border-color .15s}
+.csw.sel{border-color:#333}
+.ctbl{width:100%;border-collapse:collapse;margin-top:5px}
+.ctbl th,.ctbl td{padding:4px 7px;text-align:left;border-bottom:1px solid var(--border);font-size:11px}
+.ctbl th{font-family:var(--mono);font-size:9px;letter-spacing:1px;color:var(--text3);text-transform:uppercase;background:var(--surface2)}
+.ctbl td input{margin:0;padding:3px 5px;font-size:10px;width:auto}
+.ctbl td button{background:none;border:none;color:var(--danger);cursor:pointer;font-size:12px}
+.scale-badge{font-family:var(--mono);font-size:9px;padding:2px 6px;border-radius:2px;border:1px solid var(--border2);color:var(--text3);cursor:pointer;transition:all .15s;margin-left:4px;user-select:none}
+.scale-badge.on{border-color:var(--accent3);color:var(--accent3);background:#f0fdf4}
+
+/* ── EXPORT BUTTON ON RUN LIST ── */
+.ri-export{background:var(--accent);border:none;color:#fff;cursor:pointer;font-size:9px;padding:2px 7px;border-radius:2px;margin-left:4px;flex-shrink:0;font-family:var(--mono);font-weight:600;letter-spacing:.3px}
+.ri-export:hover{background:#0052a3}
+/* ── SEND POPUP (fixed position over everything) ── */
+#sendPopup{position:fixed;z-index:9999;background:var(--surface);border:1px solid var(--border2);border-radius:6px;box-shadow:0 8px 32px rgba(0,0,0,.18),0 2px 8px rgba(0,0,0,.10);padding:6px 0;min-width:210px;display:none}
+.send-popup-title{font-family:var(--mono);font-size:9px;letter-spacing:1px;color:var(--text3);padding:5px 14px 7px;text-transform:uppercase;border-bottom:1px solid var(--border);margin-bottom:3px}
+.send-popup-item{display:block;width:100%;text-align:left;background:none;border:none;padding:7px 16px;font-family:var(--mono);font-size:11px;color:var(--text2);cursor:pointer;transition:background .1s}
+.send-popup-item:hover{background:var(--surface2);color:var(--accent)}
+
+/* ── PRESSURE METER ── */
+.pressure-bar{height:5px;border-radius:3px;background:var(--surface3);overflow:hidden;margin-top:4px}
+.pressure-fill{height:100%;border-radius:3px;transition:width .4s,background .4s}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">
+    <div class="logo-icon">
+      <svg viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M2 18 Q6 6 11 10 Q16 14 20 4" stroke="#0066cc" stroke-width="1.8" stroke-linecap="round" fill="none"/>
+        <circle cx="11" cy="10" r="2" fill="#7c3aed" opacity=".9"/>
+        <circle cx="20" cy="4" r="1.5" fill="#15803d" opacity=".8"/>
+      </svg>
+    </div>
+    VIRTUAL LC
+  </div>
+  <div class="header-tabs">
+    <button class="htab on" id="htab-mo" onclick="setMainTab('mo')">METHOD OPTIMIZATION</button>
+    <button class="htab" id="htab-cc" onclick="setMainTab('cc')">CUSTOMIZE CHROMATOGRAM</button>
+    <button class="htab" id="htab-qa" onclick="setMainTab('qa')">QUANTITATIVE ANALYSIS</button>
+  </div>
+  <div style="display:flex;gap:6px;align-items:center">
+    <button class="btn bs bsm" onclick="openFactors()">⚙ FACTORS</button>
+    <div class="badge">VIRTUAL LC</div><div class="badge">v1.0</div>
+    <div style="font-family:var(--mono);font-size:9px;color:var(--text3);padding-left:6px;border-left:1px solid var(--border)">© <span style="color:var(--text2);font-weight:600">João Victor Basolli Borsatto</span> · 2026</div>
+  </div>
+</header>
+
+<div class="layout">
+
+<!-- ══════════════════════════════════════════════════
+     METHOD OPTIMIZATION — LEFT SIDEBAR
+══════════════════════════════════════════════════ -->
+<div class="sb" id="sb-mo">
+
+  <!-- COMPOUNDS -->
+  <div class="sec">
+    <div class="st green">Compounds</div>
+    <div id="cpdList"></div>
+    <div class="brow" style="margin-top:4px">
+      <button class="btn bs bsm" style="flex:1" onclick="addCompound()">+ ADD</button>
+      <span style="font-family:var(--mono);font-size:9px;color:var(--text3);display:flex;align-items:center;padding:0 4px">
+        <span id="cpdCount">0</span>/50
+      </span>
+    </div>
+  </div>
+
+  <!-- SAMPLE SOLVENT -->
+  <div class="sec">
+    <div class="st">Sample Solvent</div>
+    <!-- hidden injvol inputs kept for simulation compatibility -->
+    <input type="hidden" id="injvol" value="0.02">
+    <input type="hidden" id="injvol_min" value="0.01">
+    <input type="hidden" id="injvol_max" value="0.10">
+    <input type="hidden" id="injvol_step" value="0.02">
+    <div id="injvol-warn" style="display:none"></div>
+    <div class="f">
+      <label>Sample solvent organic %</label>
+      <div style="display:flex;gap:6px;align-items:center">
+        <input type="range" id="sampleOrgPct" min="0" max="100" value="5" oninput="document.getElementById('sampleOrgPctN').value=this.value;updateInjWarning()">
+        <input type="number" id="sampleOrgPctN" value="5" min="0" max="100" style="width:52px" oninput="document.getElementById('sampleOrgPct').value=this.value;updateInjWarning()">
+      </div>
+    </div>
+    <div class="f">
+      <label>Sample solvent type</label>
+      <select id="sampleSolv">
+        <option value="water">Water (weakest)</option>
+        <option value="methanol" selected>Methanol</option>
+        <option value="acetonitrile">Acetonitrile</option>
+        <option value="isopropanol">Isopropanol (strongest)</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- COLUMN DEFINITION -->
+  <div class="sec">
+    <div class="st">Column</div>
+    <!-- Stationary phase -->
+    <div class="f">
+      <label>Stationary phase</label>
+      <select id="colPhase" onchange="updateColWarnings()">
+        <option value="C18">C18 (most retentive)</option>
+        <option value="C8">C8</option>
+        <option value="C4">C4 (least retentive)</option>
+      </select>
+    </div>
+    <!-- Column ID -->
+    <div id="pb-colid" class="param-block">
+      <div class="param-header">
+        <span class="param-title">Inner Diameter</span>
+        <div class="cv-toggle">
+          <button class="cv-btn on" onclick="setCVmode('colid','const',this)">CONST</button>
+          <button class="cv-btn" onclick="setCVmode('colid','var',this)">VAR</button>
+        </div>
+      </div>
+      <div class="param-const" id="pc-colid">
+        <select id="colid" onchange="updateColWarnings();updateInjWarning();updateFlowWarning()">
+          <option value="4.6">4.6 mm (standard)</option>
+          <option value="2.1" selected>2.1 mm (narrow-bore)</option>
+          <option value="1.0">1.0 mm (micro)</option>
+          <option value="0.5">&lt;0.5 mm (capillary)</option>
+        </select>
+      </div>
+      <div class="param-var" id="pv-colid">
+        <div class="f" style="margin-top:4px"><label>Options (check to include)</label>
+          <div class="cbrow"><input type="checkbox" id="colid_v46" value="4.6"><label for="colid_v46" style="margin:0">4.6 mm</label></div>
+          <div class="cbrow"><input type="checkbox" id="colid_v21" value="2.1" checked><label for="colid_v21" style="margin:0">2.1 mm</label></div>
+          <div class="cbrow"><input type="checkbox" id="colid_v10" value="1.0"><label for="colid_v10" style="margin:0">1.0 mm</label></div>
+          <div class="cbrow"><input type="checkbox" id="colid_v05" value="0.5"><label for="colid_v05" style="margin:0">&lt;0.5 mm (capillary)</label></div>
+        </div>
+      </div>
+    </div>
+    <!-- Particle type -->
+    <div id="pb-ptype" class="param-block">
+      <div class="param-header">
+        <span class="param-title">Particle Type</span>
+        <div class="cv-toggle">
+          <button class="cv-btn on" onclick="setCVmode('ptype','const',this)">CONST</button>
+          <button class="cv-btn" onclick="setCVmode('ptype','var',this)">VAR</button>
+        </div>
+      </div>
+      <div class="param-const" id="pc-ptype">
+        <select id="ptype" onchange="updateColWarnings()">
+          <option value="fpp">Fully Porous Particles (FPP)</option>
+          <option value="spp" selected>Superficially Porous (SPP)</option>
+        </select>
+      </div>
+      <div class="param-var" id="pv-ptype">
+        <div class="f" style="margin-top:4px">
+          <div class="cbrow"><input type="checkbox" id="ptype_vfpp" value="fpp" checked><label for="ptype_vfpp" style="margin:0">FPP</label></div>
+          <div class="cbrow"><input type="checkbox" id="ptype_vspp" value="spp" checked><label for="ptype_vspp" style="margin:0">SPP</label></div>
+        </div>
+      </div>
+    </div>
+    <!-- Particle size -->
+    <div id="pb-psize" class="param-block">
+      <div class="param-header">
+        <span class="param-title">Particle Size</span>
+        <div class="cv-toggle">
+          <button class="cv-btn on" onclick="setCVmode('psize','const',this)">CONST</button>
+          <button class="cv-btn" onclick="setCVmode('psize','var',this)">VAR</button>
+        </div>
+      </div>
+      <div class="param-const" id="pc-psize">
+        <select id="psize" onchange="updateColWarnings()">
+          <option value="1.7">Sub-2µm (1.7 µm)</option>
+          <option value="3" selected>3 µm</option>
+          <option value="5">5 µm</option>
+          <option value="10">10 µm</option>
+        </select>
+      </div>
+      <div class="param-var" id="pv-psize">
+        <div class="f" style="margin-top:4px">
+          <div class="cbrow"><input type="checkbox" id="psize_v17" value="1.7" checked><label for="psize_v17" style="margin:0">Sub-2µm (1.7µm)</label></div>
+          <div class="cbrow"><input type="checkbox" id="psize_v3" value="3" checked><label for="psize_v3" style="margin:0">3 µm</label></div>
+          <div class="cbrow"><input type="checkbox" id="psize_v5" value="5"><label for="psize_v5" style="margin:0">5 µm</label></div>
+          <div class="cbrow"><input type="checkbox" id="psize_v10" value="10"><label for="psize_v10" style="margin:0">10 µm</label></div>
+        </div>
+      </div>
+    </div>
+    <div id="col-warn" class="itx" style="margin-top:2px"></div>
+  </div>
+
+  <!-- SYSTEM PARAMETERS -->
+  <div class="sec">
+    <div class="st">System Parameters</div>
+    <div class="r2">
+      <div class="f">
+        <label>Extra-col. vol. (µL)</label>
+        <input type="number" id="sysVol" value="10" step="1" min="1" max="500" oninput="updateSysWarning()">
+        <div class="itx" style="margin-top:2px">Tailing ↑ at low flow</div>
+      </div>
+      <div class="f">
+        <label>Dead time t₀ (min)</label>
+        <input type="number" id="deadTime" value="0.3" step="0.05" min="0.01" max="5">
+        <div class="itx" style="margin-top:2px">Void volume delay</div>
+      </div>
+    </div>
+    <div id="sys-warn" class="itx"></div>
+  </div>
+
+  <!-- MOBILE PHASE — unified (deltaB=0 = isocratic, deltaB>0 = gradient) -->
+  <div class="sec">
+    <div class="st">Mobile Phase</div>
+
+    <!-- %B INITIAL -->
+    <div id="pb-binit" class="param-block">
+      <div class="param-header">
+        <span class="param-title">%B Initial</span>
+        <div class="cv-toggle">
+          <button class="cv-btn on" onclick="setCVmode('binit','const',this)">CONST</button>
+          <button class="cv-btn" onclick="setCVmode('binit','var',this)">VAR</button>
+        </div>
+      </div>
+      <div class="param-const" id="pc-binit">
+        <div style="display:flex;gap:6px;align-items:center">
+          <input type="range" id="binit" min="0" max="100" value="5"
+            oninput="document.getElementById('binitN').value=this.value;updateMPDisplay()">
+          <input type="number" id="binitN" value="5" min="0" max="100" style="width:52px"
+            oninput="document.getElementById('binit').value=this.value;updateMPDisplay()">
+        </div>
+      </div>
+      <div class="param-var" id="pv-binit">
+        <div class="var-row">
+          <div><label>Min%</label><input type="number" id="binit_min" value="2" min="0" max="100" oninput="updateMPDisplay()"></div>
+          <div><label>Max%</label><input type="number" id="binit_max" value="20" min="0" max="100" oninput="updateMPDisplay()"></div>
+          <div><label>Step%</label><input type="number" id="binit_step" value="5" min="1"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ΔB -->
+    <div id="pb-deltab" class="param-block">
+      <div class="param-header">
+        <span class="param-title">ΔB (range)</span>
+        <div class="cv-toggle">
+          <button class="cv-btn on" onclick="setCVmode('deltab','const',this)">CONST</button>
+          <button class="cv-btn" onclick="setCVmode('deltab','var',this)">VAR</button>
+        </div>
+      </div>
+      <div class="param-const" id="pc-deltab">
+        <div style="display:flex;gap:6px;align-items:center">
+          <input type="range" id="deltab" min="0" max="100" value="0"
+            oninput="document.getElementById('deltabN').value=this.value;updateMPDisplay()">
+          <input type="number" id="deltabN" value="0" min="0" max="100" style="width:52px"
+            oninput="document.getElementById('deltab').value=this.value;updateMPDisplay()">
+        </div>
+      </div>
+      <div class="param-var" id="pv-deltab">
+        <div class="var-row">
+          <div><label>Min%</label><input type="number" id="deltab_min" value="0" min="0" max="100" oninput="updateMPDisplay()"></div>
+          <div><label>Max%</label><input type="number" id="deltab_max" value="90" min="0" max="100" oninput="updateMPDisplay()"></div>
+          <div><label>Step%</label><input type="number" id="deltab_step" value="10" min="0"></div>
+        </div>
+      </div>
+      <!-- Dynamic mode indicator -->
+      <div id="mp-mode-display" class="itx" style="margin-top:5px;font-weight:600;font-size:11px"></div>
+    </div>
+
+    <!-- ANALYSIS TIME (hidden when deltaB=0 = isocratic) -->
+    <div id="pb-gttime" class="param-block" style="display:none">
+      <div class="param-header">
+        <span class="param-title">Analysis Time — tG (min)</span>
+        <div class="cv-toggle">
+          <button class="cv-btn on" onclick="setCVmode('gttime','const',this)">CONST</button>
+          <button class="cv-btn" onclick="setCVmode('gttime','var',this)">VAR</button>
+        </div>
+      </div>
+      <div class="param-const" id="pc-gttime">
+        <input type="number" id="gttime" value="10" step="0.5" min="0.5" max="120">
+      </div>
+      <div class="param-var" id="pv-gttime">
+        <div class="var-row">
+          <div><label>Min</label><input type="number" id="gttime_min" value="5" min="0.5"></div>
+          <div><label>Max</label><input type="number" id="gttime_max" value="30" min="1"></div>
+          <div><label>Step</label><input type="number" id="gttime_step" value="5" min="0.5"></div>
+        </div>
+      </div>
+      <div class="itx" style="margin-top:4px">Time window in which ΔB is delivered.<br>b = S×ΔΦ/tG — shorter tG → steeper gradient.</div>
+    </div>
+
+    <!-- SOLVENT (always visible) -->
+    <div class="f">
+      <label>Organic solvent (B)</label>
+      <select id="orgSolvG">
+        <option value="methanol" selected>Methanol</option>
+        <option value="acetonitrile">Acetonitrile (stronger)</option>
+        <option value="ethanol">Ethanol</option>
+        <option value="isopropanol">Isopropanol (strongest)</option>
+      </select>
+    </div>
+
+    <!-- FLOW -->
+    <div id="pb-flow" class="param-block">
+      <div class="param-header">
+        <span class="param-title">Flow Rate (mL/min)</span>
+        <div class="cv-toggle">
+          <button class="cv-btn on" onclick="setCVmode('flow','const',this)">CONST</button>
+          <button class="cv-btn" onclick="setCVmode('flow','var',this)">VAR</button>
+        </div>
+      </div>
+      <div class="param-const" id="pc-flow">
+        <input type="number" id="flow" value="0.4" step="0.05" min="0.01" max="50"
+          oninput="updateFlowWarning()">
+      </div>
+      <div class="param-var" id="pv-flow">
+        <div class="var-row">
+          <div><label>Min</label><input type="number" id="flow_min" value="0.2" step="0.05" min="0.01" oninput="updateFlowWarning()"></div>
+          <div><label>Max</label><input type="number" id="flow_max" value="1.0" step="0.1" min="0.05" oninput="updateFlowWarning()"></div>
+          <div><label>Step</label><input type="number" id="flow_step" value="0.2" step="0.05" min="0.05"></div>
+        </div>
+      </div>
+      <div id="flow-warn" class="itx" style="margin-top:4px"></div>
+    </div>
+
+    <!-- TEMPERATURE -->
+    <div id="pb-temp" class="param-block">
+      <div class="param-header">
+        <span class="param-title">Temperature (°C)</span>
+        <div class="cv-toggle">
+          <button class="cv-btn on" onclick="setCVmode('temp','const',this)">CONST</button>
+          <button class="cv-btn" onclick="setCVmode('temp','var',this)">VAR</button>
+        </div>
+      </div>
+      <div class="param-const" id="pc-temp">
+        <div style="display:flex;gap:6px;align-items:center">
+          <input type="range" id="temp" min="1" max="100" value="40" oninput="document.getElementById('tempN').value=this.value">
+          <input type="number" id="tempN" value="40" min="1" max="100" style="width:52px" oninput="document.getElementById('temp').value=this.value">
+        </div>
+      </div>
+      <div class="param-var" id="pv-temp">
+        <div class="var-row">
+          <div><label>Min°C</label><input type="number" id="temp_min" value="25" min="1" max="100"></div>
+          <div><label>Max°C</label><input type="number" id="temp_max" value="60" min="1" max="100"></div>
+          <div><label>Step°C</label><input type="number" id="temp_step" value="10" min="1" max="50"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FORMIC ACID -->
+    <div class="f">
+      <div class="cbrow">
+        <input type="checkbox" id="acidOn" onchange="updateSysWarning()">
+        <label for="acidOn" style="margin:0;cursor:pointer">Add formic acid (0.1%)</label>
+      </div>
+      <div class="itx">Reduces peak width and tailing (ion suppression of silanol)</div>
+    </div>
+  </div>
+
+  <!-- DETECTOR SETUP -->
+  <div class="sec">
+    <div class="st">Detector Setup</div>
+    <div id="pb-ppm" class="param-block">
+      <div class="param-header">
+        <span class="param-title">Data Points / min</span>
+        <div class="cv-toggle">
+          <button class="cv-btn on" onclick="setCVmode('ppm','const',this)">CONST</button>
+          <button class="cv-btn" onclick="setCVmode('ppm','var',this)">VAR</button>
+        </div>
+      </div>
+      <div class="param-const" id="pc-ppm">
+        <div style="display:flex;gap:6px;align-items:center">
+          <input type="range" id="lcppm" min="6" max="48" step="1" value="24"
+            oninput="document.getElementById('lcppmN').value=this.value">
+          <input type="number" id="lcppmN" value="24" min="6" max="48" style="width:52px"
+            oninput="document.getElementById('lcppm').value=this.value">
+        </div>
+      </div>
+      <div class="param-var" id="pv-ppm">
+        <div class="var-row">
+          <div><label>Min</label><input type="number" id="ppm_min" value="6" min="6" max="48"></div>
+          <div><label>Max</label><input type="number" id="ppm_max" value="48" min="6" max="48"></div>
+          <div><label>Step</label><input type="number" id="ppm_step" value="6" min="1" max="24"></div>
+        </div>
+      </div>
+      <div class="itx" style="margin-top:3px">Min 6 pts/min (slow detector) · Max 48 pts/min (fast detector). More pts/min = better peak shape resolution.</div>
+    </div>
+  </div>
+
+  <!-- SIGNAL QUALITY (MO) -->
+  <div class="sec">
+    <div class="st">Signal Quality</div>
+    <div class="cbrow"><input type="checkbox" id="moNoiseOn" checked><label for="moNoiseOn" style="margin:0;cursor:pointer">Add noise</label></div>
+    <div class="f" style="margin-top:4px">
+      <label>Noise: <span id="moNoiseL" style="color:var(--accent)">0.5</span>%</label>
+      <input type="range" id="moNoise" min="0" max="5" step="0.1" value="0.5" oninput="document.getElementById('moNoiseL').textContent=this.value">
+    </div>
+    <div class="f"><label>Baseline drift (%)</label><input type="number" id="moDrift" value="0" step="0.5" min="0" max="30"></div>
+  </div>
+
+  <!-- GENERATE -->
+  <div class="sec">
+    <button class="btn bp bfw" onclick="genLC()">▶ RUN VIRTUAL LC</button>
+    <div id="lcBox" style="display:none">
+      <div class="div"></div>
+      <div class="st" style="margin-bottom:4px">Runs — click to preview</div>
+      <div class="rlist" id="lcList"></div>
+      <div class="div"></div>
+      <div class="brow">
+        <button class="btn bs bsm" style="flex:1" onclick="dlRes(lcRes,'png')">⬇ PNGs</button>
+        <button class="btn bs bsm" style="flex:1" onclick="dlRes(lcRes,'csv')">⬇ CSVs</button>
+        <button class="btn bg bsm" style="flex:1" onclick="dlZip(lcRes,'LC')">⬇ ZIP</button>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /sb-mo -->
+
+<!-- ══════════════════════════════════════════════════
+     CUSTOMIZE CHROMATOGRAM — LEFT SIDEBAR
+══════════════════════════════════════════════════ -->
+<div class="sb" id="sb-cc" style="display:none">
+  <div class="sec">
+    <div class="st">Time Window &amp; Labels</div>
+    <div class="r2">
+      <div class="f"><label>Start (min)</label><input type="number" id="xMin" value="0" step="0.1" min="0"></div>
+      <div class="f"><label>End (min)</label><input type="number" id="xMax" value="20" step="0.1"></div>
+    </div>
+    <div class="f"><label>Chart title</label><input type="text" id="chromaTitle" value="Chromatogram"></div>
+    <div class="r2">
+      <div class="f"><label>X axis</label><input type="text" id="xLabel" value="Retention Time (min)"></div>
+      <div class="f"><label>Y axis</label><input type="text" id="yLabel" value="Intensity (a.u.)"></div>
+    </div>
+  </div>
+  <div class="sec">
+    <div class="st">Signal Quality</div>
+    <div class="f">
+      <label>Pts/min: <span id="ppmL" style="color:var(--accent)">24</span></label>
+      <input type="range" id="ppm" min="1" max="50" step="1" value="24" oninput="document.getElementById('ppmL').textContent=this.value">
+    </div>
+    <div class="cbrow"><input type="checkbox" id="noiseOn" checked><label for="noiseOn" style="margin:0;cursor:pointer">Add noise</label></div>
+    <div class="f">
+      <label>Noise: <span id="noiseL" style="color:var(--accent)">0.5</span>%</label>
+      <input type="range" id="noise" min="0" max="5" step="0.1" value="0.5" oninput="document.getElementById('noiseL').textContent=this.value">
+    </div>
+    <div class="f"><label>Baseline drift (%)</label><input type="number" id="drift" value="0" step="0.5" min="0" max="30"></div>
+  </div>
+  <div class="sec">
+    <div class="st">Peaks</div>
+    <div id="pkList-s"></div>
+    <button class="btn bs bsm bfw" id="addPkS" onclick="addManualPeak()">+ ADD PEAK</button>
+    <div style="font-family:var(--mono);font-size:9px;color:var(--text3);text-align:center;margin-top:4px">up to 20 peaks</div>
+  </div>
+  <div class="sec">
+    <button class="btn bp bfw" onclick="genSingle()">▶ GENERATE</button>
+    <div class="div"></div>
+    <div class="brow">
+      <button class="btn bs bsm" style="flex:1" onclick="expSinglePNG()">⬇ PNG</button>
+      <button class="btn bs bsm" style="flex:1" onclick="expSingleCSV()">⬇ CSV</button>
+    </div>
+    <div class="div"></div>
+    <button class="btn bs bsm bfw" onclick="sendCustomizeToQA()">→ Send to Quantitative Analysis</button>
+    <button class="btn bs bsm bfw" style="margin-top:5px" onclick="sendCustomizeToMO()">→ Send Detector &amp; Baseline to Method Development</button>
+  </div>
+</div><!-- /sb-cc -->
+
+<!-- ══════════════════════════════════════════════════
+     QUANTITATIVE ANALYSIS — LEFT SIDEBAR
+══════════════════════════════════════════════════ -->
+<div class="sb" id="sb-qa" style="display:none">
+  <div class="sec">
+    <div class="st">Time Window &amp; Labels</div>
+    <div class="r2">
+      <div class="f"><label>Start (min)</label><input type="number" id="cxMin" value="0" step="0.1" min="0"></div>
+      <div class="f"><label>End (min)</label><input type="number" id="cxMax" value="20" step="0.1"></div>
+    </div>
+    <div class="f"><label>X axis label</label><input type="text" id="cxLabel" value="Retention Time (min)"></div>
+    <div class="f"><label>Y axis label</label><input type="text" id="cyLabel" value="Intensity (a.u.)"></div>
+  </div>
+  <div class="sec">
+    <div class="st">Calibration Setup</div>
+    <div class="itx" style="margin-bottom:8px">Toggle <span style="color:var(--accent3);font-weight:600">SCALE</span> on each peak below to make it proportional to concentration. Untagged peaks stay fixed (internal standards).</div>
+    <div class="f"><label>Concentration → intensity</label>
+      <select id="calRel">
+        <option value="linear">Linear</option>
+        <option value="quad">Quadratic</option>
+        <option value="log">Logarithmic</option>
+      </select>
+    </div>
+    <div class="f"><label>Max height for scaling peaks (a.u.)</label><input type="number" id="calMaxH" value="5000" step="100" min="100"></div>
+  </div>
+  <div class="sec">
+    <div class="st">Replicates</div>
+    <div class="cbrow">
+      <input type="checkbox" id="calRepOn">
+      <label for="calRepOn" style="margin:0;cursor:pointer">Generate replicates</label>
+    </div>
+    <div id="calRepOpts" style="display:none">
+      <div class="f" style="margin-top:6px"><label>Replicates per point</label>
+        <select id="calRepN">
+          <option value="2">2</option><option value="3" selected>3</option>
+          <option value="4">4</option><option value="5">5</option>
+        </select>
+      </div>
+      <div class="itx">RT ±10% · Width ±10% · Area ±15% (random per replicate)</div>
+    </div>
+  </div>
+  <div class="sec">
+    <div class="st">Signal Quality</div>
+    <div class="f">
+      <label>Pts/min: <span id="qaPpmL" style="color:var(--accent)">24</span></label>
+      <input type="range" id="qaPpm" min="6" max="48" step="1" value="24"
+        oninput="document.getElementById('qaPpmL').textContent=this.value">
+    </div>
+    <div class="cbrow"><input type="checkbox" id="qaNoiseOn" checked><label for="qaNoiseOn" style="margin:0;cursor:pointer">Add noise</label></div>
+    <div class="f">
+      <label>Noise: <span id="qaNoiseL" style="color:var(--accent)">0.5</span>%</label>
+      <input type="range" id="qaNoise" min="0" max="5" step="0.1" value="0.5"
+        oninput="document.getElementById('qaNoiseL').textContent=this.value">
+    </div>
+    <div class="f"><label>Baseline drift (%)</label><input type="number" id="qaDrift" value="0" step="0.5" min="0" max="30"></div>
+  </div>
+  <div class="sec">
+    <div class="st">Peaks</div>
+    <div class="itx" style="margin-bottom:7px">Click <span style="color:var(--accent3);font-weight:600">◆ SCALE</span> to toggle calibration scaling per peak.</div>
+    <div id="pkList-c"></div>
+    <button class="btn bs bsm bfw" id="addPkC" onclick="addCalPeak()">+ ADD PEAK</button>
+    <div style="font-family:var(--mono);font-size:9px;color:var(--text3);text-align:center;margin-top:4px">max 5 peaks</div>
+  </div>
+  <div class="sec">
+    <div class="st">Calibration Points</div>
+    <table class="ctbl">
+      <thead><tr><th>#</th><th>Concentration</th><th>Unit</th><th></th></tr></thead>
+      <tbody id="calBody"></tbody>
+    </table>
+    <button class="btn bs bsm" style="margin-top:7px" onclick="addCalPt()">+ ADD POINT</button>
+  </div>
+  <div class="sec">
+    <button class="btn bpu bfw" onclick="genCal()">▶ GENERATE SERIES</button>
+    <div id="calBox" style="display:none">
+      <div class="div"></div>
+      <div class="st" style="margin-bottom:4px">Generated — click to preview</div>
+      <div class="rlist" id="calList"></div>
+      <div class="div"></div>
+      <div class="brow">
+        <button class="btn bs bsm" style="flex:1" onclick="dlRes(calRes,'png')">⬇ PNGs</button>
+        <button class="btn bs bsm" style="flex:1" onclick="dlRes(calRes,'csv')">⬇ CSVs</button>
+        <button class="btn bg bsm" style="flex:1" onclick="dlRes(calRes,'both')">⬇ BOTH</button>
+      </div>
+      <button class="btn bpu bsm bfw" style="margin-top:6px" onclick="dlZip(calRes,'QA')">⬇ ZIP (PNG + CSV)</button>
+      <div class="itx" style="margin-top:5px">e.g. QA_01_10mgL_R1.png/.csv</div>
+    </div>
+  </div>
+</div><!-- /sb-qa -->
+
+<!-- ══════════════════════════════════════════════════
+     MAIN PANELS
+══════════════════════════════════════════════════ -->
+<div id="panel-mo" class="main-panel on">
+  <div class="carea">
+    <div class="ctbar">
+      <div class="cinfo">
+        <div>RUNS: <span id="moRunCount">—</span></div>
+        <div>PRESSURE: <span id="moPressure" class="ok-val">—</span> bar</div>
+        <div>N (plates): <span id="moPlates">—</span></div>
+        <div>COMPOUNDS: <span id="moCpdCount">0</span></div>
+      </div>
+      <div style="display:flex;gap:6px">
+        <button class="ann-btn" id="cmp-toggle" onclick="toggleCompare()">COMPARE RUNS</button>
+        <button class="ann-btn" onclick="resetWindow()">AUTO SCALE</button>
+        <button class="btn bs bsm" onclick="genLC()">↺ REFRESH</button>
+      </div>
+    </div>
+    <div class="atbar">
+      <span class="atbar-label">OVERLAY:</span>
+      <div class="overlay-row">
+        <button class="overlay-btn on" id="ov-chroma" onclick="togOverlay('chroma')">CHROMATOGRAM</button>
+        <button class="overlay-btn" id="ov-pctb" onclick="togOverlay('pctb')">%B PROFILE</button>
+        <button class="overlay-btn" id="ov-pressure" onclick="togOverlay('pressure')">PRESSURE</button>
+        <button class="overlay-btn" id="ov-temp" onclick="togOverlay('temp')">TEMPERATURE</button>
+        <button class="overlay-btn" id="ov-flow" onclick="togOverlay('flow')">FLOW</button>
+      </div>
+    </div>
+    <div class="atbar">
+      <span class="atbar-label">ANNOTATE:</span>
+      <button class="ann-btn" id="ann-name" onclick="togAnn('name')">NAME</button>
+      <button class="ann-btn" id="ann-tr"   onclick="togAnn('tr')">TR</button>
+      <button class="ann-btn" id="ann-ht"   onclick="togAnn('ht')">HEIGHT</button>
+      <button class="ann-btn" id="ann-fwhm" onclick="togAnn('fwhm')">FWHM</button>
+      <button class="ann-btn" id="ann-rs"   onclick="togAnn('rs')">RESOLUTION</button>
+      <span style="margin-left:8px;font-family:var(--mono);font-size:9px;color:var(--text3)">X:</span>
+      <input type="number" id="wxMin" value="0" step="0.1" style="width:50px;padding:2px 4px;font-size:10px" onchange="redraw()">
+      <span style="font-family:var(--mono);font-size:9px;color:var(--text3)">–</span>
+      <input type="number" id="wxMax" value="" step="0.1" style="width:50px;padding:2px 4px;font-size:10px" placeholder="auto" onchange="redraw()">
+    </div>
+    <div class="atbar" style="gap:8px;flex-wrap:wrap">
+      <span class="atbar-label">CHART:</span>
+      <label style="font-size:9px;color:var(--text3);margin:0;display:flex;align-items:center;gap:3px">
+        Grid<input type="checkbox" id="chartGrid" checked onchange="redraw()" style="width:12px;height:12px;margin:0">
+      </label>
+      <label style="font-size:9px;color:var(--text3);margin:0;display:flex;align-items:center;gap:3px">
+        Labels<input type="checkbox" id="chartLabels" checked onchange="redraw()" style="width:12px;height:12px;margin:0">
+      </label>
+      <label style="font-size:9px;color:var(--text3);margin:0;display:flex;align-items:center;gap:3px">
+        X tick:
+        <input type="number" id="chartXTick" value="" step="0.5" min="0.1" max="10" placeholder="auto"
+          style="width:44px;padding:2px 4px;font-size:10px" onchange="redraw()">
+        <span style="color:var(--text3)">min</span>
+      </label>
+      <label style="font-size:9px;color:var(--text3);margin:0;display:flex;align-items:center;gap:3px">
+        Font:
+        <input type="number" id="chartFontSize" value="10" min="7" max="18" step="1"
+          style="width:38px;padding:2px 4px;font-size:10px" onchange="redraw()">
+        <span style="color:var(--text3)">px</span>
+      </label>
+      <label style="font-size:9px;color:var(--text3);margin:0;display:flex;align-items:center;gap:3px">
+        Color:
+        <input type="color" id="chartPeakColor" value="#1a5fb4"
+          style="width:24px;height:20px;padding:1px;border:1px solid var(--border2);border-radius:2px;cursor:pointer" onchange="redraw()">
+      </label>
+    </div>
+    <div class="cwrap"><canvas id="cv" width="960" height="540"></canvas></div>
+    <!-- COMPARE MODE panel -->
+    <div id="cmpBar" style="display:none;padding:6px 14px;background:var(--surface2);border-top:1px solid var(--border);flex-shrink:0">
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <span style="font-family:var(--mono);font-size:9px;color:var(--text3);letter-spacing:1px;font-weight:600">COMPARE (up to 4):</span>
+        <div id="cmpRunBtns" style="display:flex;gap:4px;flex-wrap:wrap"></div>
+        <button class="ann-btn" style="margin-left:auto" onclick="clearCompare()">CLEAR</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="panel-cc" class="main-panel">
+  <div class="carea">
+    <div class="ctbar">
+      <div class="cinfo">
+        <div>MODE: <span>CUSTOMIZE</span></div>
+        <div>PEAKS: <span id="peakD">0</span></div>
+        <div>PTS/MIN: <span id="ppmD">24</span></div>
+      </div>
+      <button class="btn bs bsm" onclick="genSingle()">↺ REFRESH</button>
+    </div>
+    <div class="atbar" style="gap:10px">
+      <span class="atbar-label">WINDOW:</span>
+      <div style="display:flex;align-items:center;gap:4px">
+        <span style="font-family:var(--mono);font-size:9px;color:var(--text3)">X:</span>
+        <input type="number" id="ccwxMin" value="0" step="0.1" style="width:52px;padding:3px 5px;font-size:10px" onchange="ccRedraw()">
+        <span style="font-family:var(--mono);font-size:9px;color:var(--text3)">–</span>
+        <input type="number" id="ccwxMax" value="" step="0.1" style="width:52px;padding:3px 5px;font-size:10px" placeholder="auto" onchange="ccRedraw()">
+      </div>
+      <div style="display:flex;align-items:center;gap:4px">
+        <span style="font-family:var(--mono);font-size:9px;color:var(--text3)">Y max:</span>
+        <input type="number" id="ccwyMax" value="" step="100" style="width:64px;padding:3px 5px;font-size:10px" placeholder="auto" onchange="ccRedraw()">
+      </div>
+      <button class="ann-btn" onclick="ccResetWindow()">AUTO</button>
+    </div>
+    <div class="atbar">
+      <span class="atbar-label">ANNOTATE:</span>
+      <button class="ann-btn" id="cann-tr"   onclick="ccTogAnn('tr')">TR</button>
+      <button class="ann-btn" id="cann-ht"   onclick="ccTogAnn('ht')">HEIGHT</button>
+      <button class="ann-btn" id="cann-fwhm" onclick="ccTogAnn('fwhm')">FWHM</button>
+      <button class="ann-btn" id="cann-wb"   onclick="ccTogAnn('wb')">W BASE (4σ)</button>
+      <button class="ann-btn" id="cann-area" onclick="ccTogAnn('area')">AREA</button>
+    </div>
+    <div class="cwrap"><canvas id="cv2" width="960" height="540"></canvas></div>
+  </div>
+</div>
+
+<div id="panel-qa" class="main-panel">
+  <div class="carea">
+    <div class="ctbar">
+      <div class="cinfo">
+        <div>MODE: <span>QUANTITATIVE ANALYSIS</span></div>
+        <div>PEAKS: <span id="qaPeakD">0</span></div>
+        <div>PTS/MIN: <span id="qaPpmD">24</span></div>
+      </div>
+      <button class="btn bs bsm" onclick="genCal()">↺ REFRESH</button>
+    </div>
+    <div class="atbar" style="gap:10px">
+      <span class="atbar-label">WINDOW:</span>
+      <div style="display:flex;align-items:center;gap:4px">
+        <span style="font-family:var(--mono);font-size:9px;color:var(--text3)">X:</span>
+        <input type="number" id="qawxMin" value="" step="0.1" style="width:52px;padding:3px 5px;font-size:10px" placeholder="auto" onchange="qaRedraw()">
+        <span style="font-family:var(--mono);font-size:9px;color:var(--text3)">–</span>
+        <input type="number" id="qawxMax" value="" step="0.1" style="width:52px;padding:3px 5px;font-size:10px" placeholder="auto" onchange="qaRedraw()">
+      </div>
+      <div style="display:flex;align-items:center;gap:4px">
+        <span style="font-family:var(--mono);font-size:9px;color:var(--text3)">Y max:</span>
+        <input type="number" id="qawyMax" value="" step="100" style="width:64px;padding:3px 5px;font-size:10px" placeholder="auto" onchange="qaRedraw()">
+      </div>
+      <button class="ann-btn" onclick="qaResetWindow()">AUTO</button>
+    </div>
+    <div class="atbar">
+      <span class="atbar-label">ANNOTATE:</span>
+      <button class="ann-btn" id="qaann-tr"   onclick="qaTogAnn('tr')">TR</button>
+      <button class="ann-btn" id="qaann-ht"   onclick="qaTogAnn('ht')">HEIGHT</button>
+      <button class="ann-btn" id="qaann-fwhm" onclick="qaTogAnn('fwhm')">FWHM</button>
+      <button class="ann-btn" id="qaann-wb"   onclick="qaTogAnn('wb')">W BASE (4σ)</button>
+      <button class="ann-btn" id="qaann-area" onclick="qaTogAnn('area')">AREA</button>
+    </div>
+    <div class="cwrap"><canvas id="cv3" width="960" height="540"></canvas></div>
+  </div>
+</div>
+
+</div><!-- /layout -->
+<div id="notif"></div>
+<div id="sendPopup"></div>
+
+<!-- FACTORS MODAL -->
+<div class="modal-bg" id="modalFactors">
+  <div class="modal">
+    <button class="modal-close" onclick="closeFactors()">✕</button>
+    <h3>⚙ Internal Simulation Factors</h3>
+    <div class="itx" style="margin-bottom:12px">These factors control the physics simulation. Adjust to calibrate the virtual LC to your real system.</div>
+    <div class="modal-row">
+      <div class="f"><label>Base plates (N₀) at 3µm FPP</label><input type="number" id="fN0" value="12000" step="500"></div>
+      <div class="f"><label>SPP plate gain factor</label><input type="number" id="fSppGain" value="1.35" step="0.05" min="1" max="2"></div>
+    </div>
+    <div class="modal-row">
+      <div class="f"><label>PSA power-law prefactor (A) — isocratic</label><input type="number" id="fPsaA" value="1680.5" step="50" min="100"></div>
+      <div class="f"><label>PSA power-law exponent (b) — isocratic</label><input type="number" id="fPsaB" value="0.7797" step="0.01" min="0.3" max="2.0"></div>
+    </div>
+    <div class="modal-row">
+      <div class="f"><label>PSA prefactor (A) — gradient</label><input type="number" id="fPsaAg" value="1920" step="50" min="100" title="Gradient mode k0 prefactor. Higher = more retention in gradient."></div>
+      <div class="f"><label>PSA exponent (b) — gradient</label><input type="number" id="fPsaBg" value="0.816" step="0.01" min="0.3" max="2.0" title="Gradient mode PSA exponent. Higher = wider spread between compounds."></div>
+    </div>
+    <div class="modal-row">
+      <div class="f"><label>LSS S coefficient (solvent strength)</label><input type="number" id="fSolvS" value="2.3" step="0.1" min="0.5" max="5" title="Log-linear solvent strength. Higher S = stronger %B effect on retention."></div>
+      <div class="f"><label>Temperature k reduction (/°C)</label><input type="number" id="fTempK" value="0.008" step="0.001"></div>
+    </div>
+    <div class="modal-row">
+      <div class="f"><label>Extra-col. tailing factor (µL⁻¹)</label><input type="number" id="fSysTail" value="0.003" step="0.001" min="0"></div>
+      <div class="f"><label>Inj. vol. fronting threshold scale</label><input type="number" id="fInjFront" value="1.0" step="0.1" min="0.1"></div>
+    </div>
+    <div class="modal-row">
+      <div class="f"><label>Formic acid tailing reduction</label><input type="number" id="fAcidTail" value="0.35" step="0.05" min="0" max="1"></div>
+      <div class="f"><label>Formic acid width reduction</label><input type="number" id="fAcidWidth" value="0.12" step="0.02" min="0" max="0.5"></div>
+    </div>
+    <div class="modal-row">
+      <div class="f"><label>SPP fronting amplification</label><input type="number" id="fSppFront" value="1.4" step="0.1" min="1"></div>
+      <div class="f"><label>Pressure base (bar·min/mL at 3µm)</label><input type="number" id="fPresBase" value="120" step="10" min="10"></div>
+    </div>
+    <div class="div"></div>
+    <div class="brow">
+      <button class="btn bs bsm" onclick="resetFactors()">RESET DEFAULTS</button>
+      <button class="btn bp bsm" style="flex:1" onclick="closeFactors()">APPLY &amp; CLOSE</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════════════
+// CONSTANTS & STATE
+// ════════════════════════════════════════════════════════════════
+const CLR=['#2563eb','#dc2626','#16a34a','#9333ea','#ea580c','#0891b2','#be185d','#854d0e','#166534','#1e40af',
+           '#7c2d12','#4c1d95','#065f46','#1e3a5f','#78350f','#831843','#134e4a','#1a202c','#312e81','#3b0764'];
+
+let compounds=[];
+let manualPeaks=[];
+let lcRes=[];
+// mpMode removed — unified model: deltaB=0 = isocratic, deltaB>0 = gradient
+let overlayState={chroma:true,pctb:false,pressure:false,temp:false,flow:false};
+let annState={name:false,tr:false,ht:false,fwhm:false,rs:false};
+let ccAnnState={tr:false,ht:false,fwhm:false,wb:false,area:false};
+let lastLCData=null;
+let lastLCPeaks=[];
+let lastLCCfg={};
+let ccLastData=[],ccLastPeaks=[],ccLastCfg={};
+let qaLastData=[],qaLastPeaks=[],qaLastCfg={};
+let qaAnnState={tr:false,ht:false,fwhm:false,wb:false,area:false};
+let calPeaks=[]; // peaks for QA/calibration tab
+let calPts=[];
+let calRes=[];
+let currentMainTab='mo';
+
+// cv/variable tracking
+const cvModes={}; // id -> 'const'|'var'
+
+// ════════════════════════════════════════════════════════════════
+// FACTORS (internal simulation parameters)
+// ════════════════════════════════════════════════════════════════
+function getFactors(){
+  return{
+    N0:+document.getElementById('fN0').value||12000,
+    sppGain:+document.getElementById('fSppGain').value||1.35,
+    psaA:+document.getElementById('fPsaA').value||1680.5,      // isocratic prefactor
+    psaB:+document.getElementById('fPsaB').value||0.7797,      // isocratic exponent
+    psaA_grad:+document.getElementById('fPsaAg').value||1920,  // gradient prefactor
+    psaB_grad:+document.getElementById('fPsaBg').value||0.816, // gradient exponent
+    solvS:+document.getElementById('fSolvS').value||2.3,
+    tempK:+document.getElementById('fTempK').value||0.008,
+    sysTail:+document.getElementById('fSysTail').value||0.003,
+    injFront:+document.getElementById('fInjFront').value||1.0,
+    acidTail:+document.getElementById('fAcidTail').value||0.35,
+    acidWidth:+document.getElementById('fAcidWidth').value||0.12,
+    sppFront:+document.getElementById('fSppFront').value||1.4,
+    presBase:+document.getElementById('fPresBase').value||333
+  };
+}
+function openFactors(){document.getElementById('modalFactors').classList.add('on');}
+function closeFactors(){document.getElementById('modalFactors').classList.remove('on');}
+function resetFactors(){
+  const def={fN0:12000,fSppGain:1.35,fPsaA:1680.5,fPsaB:0.7797,fPsaAg:1920,fPsaBg:0.816,
+             fSolvS:2.3,fTempK:0.008,fSysTail:0.003,fInjFront:1.0,fAcidTail:0.35,
+             fAcidWidth:0.12,fSppFront:1.4,fPresBase:333};
+  Object.entries(def).forEach(([k,v])=>{const el=document.getElementById(k);if(el)el.value=v;});
+  notify('Factors reset to defaults');
+}
+
+// ════════════════════════════════════════════════════════════════
+// TAB NAVIGATION
+// ════════════════════════════════════════════════════════════════
+function setMainTab(tab){
+  currentMainTab=tab;
+  ['mo','cc','qa'].forEach(t=>{
+    document.getElementById('htab-'+t).classList.toggle('on',t===tab);
+    document.getElementById('panel-'+t).classList.toggle('on',t===tab);
+    const sb=document.getElementById('sb-'+t);
+    if(sb) sb.style.display=t===tab?'':'none';
+  });
+}
+
+// ════════════════════════════════════════════════════════════════
+// CONST/VAR TOGGLE SYSTEM
+// ════════════════════════════════════════════════════════════════
+function setCVmode(id, mode, btn){
+  cvModes[id]=mode;
+  const pc=document.getElementById('pc-'+id);
+  const pv=document.getElementById('pv-'+id);
+  if(pc) pc.classList.toggle('hide', mode==='var');
+  if(pv) pv.classList.toggle('show', mode==='var');
+  // update sibling buttons
+  const pb=document.getElementById('pb-'+id);
+  if(pb){
+    pb.querySelectorAll('.cv-btn').forEach(b=>b.classList.remove('on'));
+    btn.classList.add('on');
+  }
+}
+
+function isVar(id){return cvModes[id]==='var';}
+
+function getParamValues(id, constEl, opts){
+  // opts: {min,max,step} element IDs OR array of values
+  if(!isVar(id)){
+    const el=document.getElementById(constEl);
+    return[el?+el.value:0];
+  }
+  if(opts.choices){
+    // checkbox-based
+    return opts.choices.filter(c=>document.getElementById(c.cbId)?.checked).map(c=>c.val);
+  }
+  const mn=+document.getElementById(opts.min).value;
+  const mx=+document.getElementById(opts.max).value;
+  const st=+document.getElementById(opts.step).value||1;
+  const vals=[];
+  for(let v=mn;v<=mx+1e-9;v+=st) vals.push(+v.toFixed(6));
+  return vals.length?vals:[mn];
+}
+
+// ════════════════════════════════════════════════════════════════
+// MOBILE PHASE MODE
+// ════════════════════════════════════════════════════════════════
+function updateMPDisplay(){
+  const dB=isVar('deltab')?+document.getElementById('deltab_min').value||0
+                           :+document.getElementById('deltabN').value||0;
+  const bInit=+document.getElementById('binitN').value||0;
+  const bFinal=Math.min(100,bInit+dB);
+  const modeEl=document.getElementById('mp-mode-display');
+  const gradTimeEl=document.getElementById('pb-gttime');
+  const isGrad=dB>=0.5;
+  if(modeEl){
+    if(isGrad){
+      modeEl.innerHTML=`<span style="color:var(--accent2)">▶ GRADIENT</span> &nbsp;→&nbsp; %B Final: <span style="color:var(--accent);font-weight:700">${bFinal}%</span>`;
+      modeEl.style.background='#f5f0ff';modeEl.style.padding='4px 8px';modeEl.style.borderRadius='3px';modeEl.style.border='1px solid #c4b5fd';
+    } else {
+      modeEl.innerHTML=`<span style="color:var(--accent3)">▶ ISOCRATIC</span> &nbsp;—&nbsp; constant %B`;
+      modeEl.style.background='#f0fdf4';modeEl.style.padding='4px 8px';modeEl.style.borderRadius='3px';modeEl.style.border='1px solid #86efac';
+    }
+  }
+  if(gradTimeEl) gradTimeEl.style.display=isGrad?'':'none';
+  updateInjWarning();
+}
+
+// legacy shim — called in some old places
+function setMPmode(m){updateMPDisplay();}
+function updateBfinalDisplay(){updateMPDisplay();}
+
+// ════════════════════════════════════════════════════════════════
+// OVERLAY TOGGLE
+// ════════════════════════════════════════════════════════════════
+function togOverlay(key){
+  if(key==='chroma'){overlayState[key]=true;} // chroma always on for now
+  else overlayState[key]=!overlayState[key];
+  document.getElementById('ov-'+key)?.classList.toggle('on',overlayState[key]);
+  redraw();
+}
+
+// ════════════════════════════════════════════════════════════════
+// ANNOTATION TOGGLES
+// ════════════════════════════════════════════════════════════════
+function togAnn(k){
+  annState[k]=!annState[k];
+  document.getElementById('ann-'+k)?.classList.toggle('on',annState[k]);
+  redraw();
+}
+function ccTogAnn(k){
+  ccAnnState[k]=!ccAnnState[k];
+  document.getElementById('cann-'+k)?.classList.toggle('on',ccAnnState[k]);
+  ccRedraw();
+}
+
+// ════════════════════════════════════════════════════════════════
+// COMPOUNDS
+// ════════════════════════════════════════════════════════════════
+function addCompound(def={}){
+  if(compounds.length>=50){notify('Max 50 compounds','warn');return;}
+  const id=Date.now()+Math.random();
+  const idx=compounds.length;
+  compounds.push({
+    id, 
+    name:def.name||`Compound ${idx+1}`,
+    pol:def.pol||(50+idx*30),
+    color:CLR[idx%CLR.length]
+  });
+  renderCompounds();
+}
+function removeCompound(id){
+  compounds=compounds.filter(c=>c.id!==id);
+  renderCompounds();
+}
+function renderCompounds(){
+  const list=document.getElementById('cpdList');
+  list.innerHTML='';
+  compounds.forEach((c,i)=>{
+    const card=document.createElement('div');
+    card.className='cpd-card';
+    const polCls=c.pol<=100?'pol-low':c.pol<=500?'pol-mid':'pol-hi';
+    const polLbl=c.pol<=100?'Apolar':c.pol<=500?'Mid':' Polar';
+    const polDesc=c.pol<200?'<span class="warn">Apolar — high retention</span>':c.pol<600?'<span class="hi">Medium polarity</span>':'<span class="ok">Polar — low retention</span>';
+    card.innerHTML=`
+      <div class="cpd-head">
+        <div class="cpd-dot" style="background:${c.color}"></div>
+        <input class="cpd-name" value="${c.name}"
+          onchange="compounds[${i}].name=this.value"
+          onclick="this.select()" title="Click to rename">
+        <span class="pol-badge ${polCls}">${polLbl}</span>
+        <button class="cpd-rm" onclick="removeCompound(${c.id})">✕</button>
+      </div>
+      <div class="cpd-pol-row">
+        <label>Pol:</label>
+        <input type="range" min="1" max="1000" step="1" value="${c.pol}"
+          oninput="compounds[${i}].pol=+this.value;document.getElementById('cpol${c.id}').value=this.value;renderCompounds()">
+        <input type="number" id="cpol${c.id}" class="cpd-psa-num" value="${c.pol}" min="1" max="1000"
+          onchange="compounds[${i}].pol=+this.value;renderCompounds()">
+      </div>
+      <div class="itx" style="margin-top:3px">Polarity ${c.pol} — ${polDesc}</div>
+    `;
+    list.appendChild(card);
+  });
+  document.getElementById('cpdCount').textContent=compounds.length;
+  document.getElementById('moCpdCount').textContent=compounds.length;
+}
+
+// ════════════════════════════════════════════════════════════════
+// WARNING HELPERS
+// ════════════════════════════════════════════════════════════════
+function updateInjWarning(){
+  // Injection volume removed from UI — function kept for simulation compatibility
+}
+// Flow limits per column diameter
+const FLOW_MAX={4.6:10, 2.1:5, 1.0:1, 0.5:0.1};
+const COL_NAMES={4.6:'4.6 mm', 2.1:'2.1 mm', 1.0:'1.0 mm', 0.5:'<0.5 mm capillary'};
+
+function getFlowMax(id){return FLOW_MAX[id]||0.1;}
+
+function updateFlowWarning(){
+  const id=+document.getElementById('colid').value||2.1;
+  const isVar=document.getElementById('pv-flow').classList.contains('show');
+  const flowMax=getFlowMax(id);
+  const el=document.getElementById('flow-warn');
+  if(!el) return;
+  const flow=isVar
+    ? Math.max(+document.getElementById('flow_max').value||0, +document.getElementById('flow_min').value||0)
+    : +document.getElementById('flow').value||0.4;
+
+  const msgs=[];
+  if(flow>flowMax){
+    msgs.push(`<span class="danger">✗ ${flow} mL/min exceeds max for ${COL_NAMES[id]} (max ${flowMax} mL/min)</span>`);
+  } else if(flow>flowMax*0.8){
+    msgs.push(`<span class="warn">⚠ Near flow limit for ${COL_NAMES[id]} (max ${flowMax} mL/min)</span>`);
+  } else {
+    msgs.push(`<span class="ok">✓ Flow OK for ${COL_NAMES[id]}</span>`);
+  }
+  el.innerHTML=msgs.join('<br>');
+}
+
+function applyScaledFlow(val){
+  document.getElementById('flow').value=val;
+  updateFlowWarning();
+}
+
+function updateColWarnings(){
+  const id=+document.getElementById('colid').value||2.1;
+  const pt=document.getElementById('ptype').value;
+  const ps=+document.getElementById('psize').value||3;
+  const el=document.getElementById('col-warn');
+  const msgs=[];
+  if(id<=1.0) msgs.push(`<span class="warn">⚠ ${COL_NAMES[id]}: requires low system volume and compatible micro-LC pump</span>`);
+  if(pt==='spp') msgs.push('<span class="ok">✓ SPP: ~50% lower backpressure, sharper peaks vs FPP</span>');
+  if(ps<=1.7) msgs.push('<span class="warn">⚠ Sub-2µm: high efficiency but requires UHPLC system (&gt;600 bar)</span>');
+  el.innerHTML=msgs.join('<br>');
+  updateFlowWarning();
+  updateInjWarning();
+}
+function updateSysWarning(){
+  const sv=+document.getElementById('sysVol').value||10;
+  const acid=document.getElementById('acidOn').checked;
+  const el=document.getElementById('sys-warn');
+  const msgs=[];
+  if(sv>50) msgs.push('<span class="warn">⚠ Large system volume: significant extra-column tailing</span>');
+  if(acid) msgs.push('<span class="ok">✓ Formic acid: reduces silanol tailing and peak width</span>');
+  el.innerHTML=msgs.join('<br>');
+}
+
+// ════════════════════════════════════════════════════════════════
+// PHYSICS ENGINE
+// ════════════════════════════════════════════════════════════════
+
+// Solvent elution strength (higher = more eluotropic, shorter tR)
+const SOLVENT_STRENGTH={methanol:1.0,acetonitrile:1.32,ethanol:0.88,isopropanol:1.55,water:0};
+// Viscosity relative to pure water at 25°C (η_water=0.89 mPa·s)
+const SOLVENT_VISCOSITY={methanol:0.618,acetonitrile:0.416,ethanol:1.348,isopropanol:2.584,water:1.000};
+
+function mixViscosity(pctB,solv){
+  const eta_w=1.0;
+  const eta_s=SOLVENT_VISCOSITY[solv]||1.0;
+  const f=pctB/100;
+  const etaIdeal=eta_w*(1-f)+eta_s*f;
+  // Non-ideal mixing excess — peak viscosity at ~40-50% organic
+  const excess=solv==='methanol'?0.25*Math.sin(Math.PI*f)*Math.exp(-f*0.5)
+              :solv==='acetonitrile'?0.15*Math.sin(Math.PI*f)*Math.exp(-f*0.5)
+              :solv==='ethanol'?0.12*Math.sin(Math.PI*f)
+              :0.08*Math.sin(Math.PI*f);
+  return Math.max(0.1,etaIdeal+excess);
+}
+
+function calcRetentionFactor(cpd, params){
+  const F=getFactors();
+
+  // Polarity → k_base (unified model for both isocratic and gradient)
+  // Higher polarity = lower k = elutes earlier
+  const polEff=Math.max(1,cpd.pol);
+  const base_k=F.psaA_grad*Math.pow(polEff,-F.psaB_grad);
+
+  const phaseFactor={C18:1.0,C8:0.75,C4:0.55}[params.phase]||1.0;
+  const tempFactor=Math.max(0.05,1-(params.temp-25)*F.tempK);
+  const ss=SOLVENT_STRENGTH[params.orgSolvG]||1.0;
+  const S=ss*F.solvS;
+  const phi0=params.bInit/100;
+  const t0_real=params.colVm/params.flow; // real void time = Vm/F
+  const k0=base_k*phaseFactor*tempFactor*Math.exp(-S*phi0);
+
+  params._t0_real=t0_real;
+  params._b_steep=0;
+  params._post_grad=false;
+
+  const deltaB=params.deltaB||0;
+
+  if(deltaB<0.5){
+    // ── ISOCRATIC: deltaB=0, tR = t0*(1+k0) ──
+    return Math.max(0.001,k0);
+  }
+
+  // ── GRADIENT: LSS (Snyder) ──
+  // b = S × ΔΦ / tG — gradient steepness depends ONLY on %B range and time.
+  // Flow and column volume do NOT affect gradient strength — only t0 = Vm/F.
+  const phi1=Math.min(1.0,phi0+deltaB/100);
+  const deltaPhi=phi1-phi0;
+  const b_steep=S*deltaPhi/params.gradTime;
+  params._b_steep=b_steep;
+  params._k0=k0;
+
+  if(b_steep>0&&k0>0){
+    const tR_lss=t0_real+(1/b_steep)*Math.log10(2.3*k0*b_steep+1);
+    const phi_e=phi0+b_steep*(tR_lss-t0_real)/S;
+    // LSS formula gives correct tR even when phi_e > phi1:
+    // it extrapolates as if the gradient continued — monotonic and continuous.
+    // Only exclude compound if phi_e is unreasonably large (gradient far too weak).
+    const MAX_PHI_EXTRAPOLATION = 1.5; // allow up to 50% beyond bFinal
+    if(phi_e > phi1 + (phi1-phi0)*MAX_PHI_EXTRAPOLATION){
+      return -1; // gradient far too weak — compound does not elute
+    }
+    return Math.max(0.01,(tR_lss-t0_real)/t0_real);
+  }
+  return Math.max(0.001,k0); // fallback isocratic
+}
+
+function calcPlates(params){
+  const F=getFactors();
+  const ps=params.psize;
+  const psScaling=(3/ps)**1.7;
+  let N=F.N0*psScaling;
+  if(params.ptype==='spp') N*=F.sppGain;
+
+  // Van Deemter: u_linear = flow / column_area ∝ flow / d²
+  // Reference: 4.6mm at 1.0 mL/min ≡ u=1 (normalized)
+  // For any column: u_rel = (flow/d²) / (1.0/4.6²)
+  const d=params.colId||2.1;
+  const flowRef_46=1.0; // mL/min reference for 4.6mm
+  const uLinear=(params.flow/d**2) / (flowRef_46/4.6**2);
+  const uOpt=1.5;
+  const hRel=0.3+1.2/uLinear+0.05*uLinear;
+  const hOpt=0.3+1.2/uOpt+0.05*uOpt;
+  N=N*(hOpt/hRel);
+  return Math.max(100,Math.round(N));
+}
+
+function calcPressure(params){
+  const F=getFactors();
+  const ps=params.psize;
+  const id=params.colId;
+  const flow=params.flow;
+  // Kozeny-Carman: ΔP ∝ η·u/dp²
+  // Calibrated: 4.6mm, 10µm FPP, 25°C, 1mL/min:
+  //   100% water  → 30 bar
+  //   100% ACN    → ~12 bar  (ratio driven by viscosity: η_water/η_ACN ≈ 2.4)
+  const dpScale=(3/ps)**2;
+  const idScale=(4.6/id)**2;
+  const isGrad=(params.deltaB||0)>=0.5;
+  let eta=mixViscosity(isGrad?(params.bInit+params.bFinal)/2:params.bInit, params.orgSolvG);
+  const tempViscFactor=Math.max(0.3, 1-0.02*(params.temp-25));
+  eta*=tempViscFactor;
+  const sppFactor=params.ptype==='spp'?0.5:1.0;
+  const P=F.presBase*dpScale*idScale*flow*eta*sppFactor;
+  return Math.round(P);
+}
+
+// Build pressure profile over time
+function buildPressureProfile(params, xMax){
+  const pts=[];
+  const step=xMax/200;
+  const isGrad=(params.deltaB||0)>=0.5;
+  const t0r=params.colVm/params.flow;
+  for(let t=0;t<=xMax+step;t+=step){
+    let pctB=params.bInit;
+    if(isGrad){
+      if(t<t0r) pctB=params.bInit;
+      else if(t<t0r+params.gradTime) pctB=params.bInit+(params.bFinal-params.bInit)*(t-t0r)/params.gradTime;
+      else pctB=params.bFinal;
+    }
+    let eta=mixViscosity(pctB, params.orgSolvG);
+    eta*=Math.max(0.3, 1-0.02*(params.temp-25));
+    const dpScale=(3/params.psize)**2;
+    const idScale=(4.6/params.colId)**2;
+    const sppFactor=params.ptype==='spp'?0.5:1.0;
+    const F=getFactors();
+    const P=F.presBase*dpScale*idScale*params.flow*eta*sppFactor;
+    pts.push({t, P});
+  }
+  return pts;
+}
+
+function calcPeakShape(cpd, params, k, N){
+  const F=getFactors();
+  const isGrad=(params.deltaB||0)>=0.5;
+  // Use real t0 = Vm/flow (same for both modes now)
+  const t0=params._t0_real||params.colVm/params.flow;
+  const tR=t0*(1+k);
+
+  // ── Peak width from plate theory ──
+  const sigma_iso=tR/Math.sqrt(N);
+  let sigma=sigma_iso;
+
+  if(isGrad && params._b_steep && !params._post_grad){
+    // Gradient peak compression (Snyder LSS)
+    sigma=sigma_iso/Math.sqrt(1+params._b_steep*1.0);
+  }
+
+  const tempWidthFactor=Math.max(0.5, 1-0.003*(params.temp-25));
+  const acidWidthFactor=params.acid?1-F.acidWidth:1.0;
+  const fwhm=2.355*sigma*tempWidthFactor*acidWidthFactor;
+
+  // ── TAILING from extra-column volume ──
+  let sysTailing=1+F.sysTail*params.sysVol/params.flow;
+  sysTailing=sysTailing-0.004*(params.temp-25);
+  sysTailing=Math.max(1.0,sysTailing);
+  if(params.acid) sysTailing=1+(sysTailing-1)*(1-F.acidTail);
+  if(params.ptype==='spp') sysTailing*=1.05;
+  const idTailAmp={4.6:1.0,2.1:1.2,1.0:1.5,0.5:2.0}[params.colId]||1.2;
+  sysTailing=1+(sysTailing-1)*idTailAmp;
+
+  // ── FRONTING from injection volume ──
+  const thresh={4.6:0.5,2.1:0.3,1.0:0.2,0.5:0.1}[params.colId]||0.3;
+  const injFrontAmp=params.ptype==='spp'?F.sppFront:1.0;
+  let injFrontAs=1.0;
+  const injvol=params.injVol*F.injFront;
+  if(injvol>=thresh){
+    const excess=(injvol-thresh)/thresh;
+    injFrontAs=Math.max(0.2, 1-0.4*excess*injFrontAmp);
+  }
+  const mpB=params.bInit; // unified: use bInit as the mobile phase organic %
+  if(params.sampleOrgPct>mpB){
+    const orgExcess=(params.sampleOrgPct-mpB)/100;
+    injFrontAs=Math.min(injFrontAs, injFrontAs-0.3*orgExcess*injFrontAmp);
+    injFrontAs=Math.max(0.15,injFrontAs);
+  }
+
+  let finalAs;
+  if(injFrontAs<1.0){
+    finalAs=Math.max(0.2, injFrontAs+(sysTailing-1)*0.1);
+    if(finalAs>1) finalAs=1;
+  } else {
+    finalAs=sysTailing;
+  }
+
+  const shape=finalAs<0.95?'fronting':finalAs>1.05?'tailing':'none';
+  const finalWidth=Math.max(0.001, fwhm);
+  // Height is set to 3000 here; will be normalized for equal area in genLC
+  return{tR, width:finalWidth, As:finalAs, shape, height:3000, color:cpd.color};
+}
+
+// ════════════════════════════════════════════════════════════════
+// GRADIENT/PRESSURE %B PROFILE
+// ════════════════════════════════════════════════════════════════
+function buildGradientProfile(params, xMax){
+  const pts=[];
+  const step=xMax/200;
+  const isGrad=(params.deltaB||0)>=0.5;
+  const t0r=params.colVm/params.flow;
+  for(let t=0;t<=xMax+step;t+=step){
+    let pct;
+    if(!isGrad){
+      pct=params.bInit; // isocratic: flat line
+    } else {
+      if(t<t0r) pct=params.bInit;
+      else if(t<t0r+params.gradTime) pct=params.bInit+(params.bFinal-params.bInit)*(t-t0r)/params.gradTime;
+      else pct=params.bFinal;
+    }
+    pts.push({t,pct});
+  }
+  return pts;
+}
+
+// ════════════════════════════════════════════════════════════════
+// ONICHROM NAMING HELPER
+// ════════════════════════════════════════════════════════════════
+function fmtVal(v){
+  const s=v.toFixed(3).replace('.','p').replace(/0+$/,'').replace(/p$/,'');
+  return s||'0';
+}
+function buildOniName(params, ppm){
+  const toks=[];
+  toks.push(`F${fmtVal(params.flow)}`);
+  const isGrad=(params.deltaB||0)>=0.5;
+  const sv={methanol:'MeOH',acetonitrile:'ACN',ethanol:'EtOH',isopropanol:'iPrOH'};
+  if(!isGrad){
+    toks.push(`B${Math.round(params.bInit)}`);
+    toks.push('ISO');
+  } else {
+    toks.push(`Bi${Math.round(params.bInit)}`);
+    toks.push(`dB${Math.round(params.deltaB)}`);
+    toks.push(`tA${fmtVal(params.gradTime)}`);
+    toks.push('GRAD');
+  }
+  toks.push(sv[params.orgSolvG]||'MeOH');
+  toks.push(`T${Math.round(params.temp)}`);
+  toks.push(`${fmtVal(params.psize)}um`);
+  toks.push(`${params.colId}mm`);
+  toks.push(params.ptype==='spp'?'SPP':'FPP');
+  if(params.acid) toks.push('FA');
+  toks.push(`PPM${Math.round(ppm)}`);
+  return toks.join('_');
+}
+
+// ════════════════════════════════════════════════════════════════
+// GENERATE LC RUNS
+// ════════════════════════════════════════════════════════════════
+function genLC(){
+  if(!compounds.length){notify('Add at least one compound!','warn');return;}
+
+  // Validate flow vs column diameter
+  const _id=+document.getElementById('colid').value||2.1;
+  const _flow=+document.getElementById('flow').value||0.4;
+  const _fmax=getFlowMax(_id);
+  if(_flow>_fmax){
+    notify(`Flow ${_flow} mL/min exceeds max for ${COL_NAMES[_id]} (${_fmax} mL/min)!`,'warn');
+  }
+  
+  // Collect variable arrays for each parameter
+  const flows=getParamValues('flow','flow',{min:'flow_min',max:'flow_max',step:'flow_step'});
+  const temps=getParamValues('temp','tempN',{min:'temp_min',max:'temp_max',step:'temp_step'});
+  const injvols=getParamValues('injvol','injvol',{min:'injvol_min',max:'injvol_max',step:'injvol_step'});
+  const ppms=getParamValues('ppm','lcppmN',{min:'ppm_min',max:'ppm_max',step:'ppm_step'});
+
+  // Column params
+  const colIds=getParamValues('colid','colid',{choices:[
+    {cbId:'colid_v46',val:4.6},{cbId:'colid_v21',val:2.1},
+    {cbId:'colid_v10',val:1.0},{cbId:'colid_v05',val:0.5}
+  ]});
+  const ptypes=getParamValues('ptype','ptype',{choices:[
+    {cbId:'ptype_vfpp',val:'fpp'},{cbId:'ptype_vspp',val:'spp'}
+  ]});
+  const psizes=getParamValues('psize','psize',{choices:[
+    {cbId:'psize_v17',val:1.7},{cbId:'psize_v3',val:3},
+    {cbId:'psize_v5',val:5},{cbId:'psize_v10',val:10}
+  ]});
+
+  // Mobile phase params — unified (deltaB=0 = isocratic, deltaB>0 = gradient)
+  const bInits=getParamValues('binit','binitN',{min:'binit_min',max:'binit_max',step:'binit_step'});
+  const deltaBs=getParamValues('deltab','deltabN',{min:'deltab_min',max:'deltab_max',step:'deltab_step'});
+  const gradTimes=getParamValues('gttime','gttime',{min:'gttime_min',max:'gttime_max',step:'gttime_step'});
+  const orgSolvG=document.getElementById('orgSolvG').value;
+
+  // Build parameter combinations using the "diagonal" approach for variables
+  const varSets=[];
+  if(flows.length>1) varSets.push(flows);
+  if(temps.length>1) varSets.push(temps);
+  if(injvols.length>1) varSets.push(injvols);
+  if(ppms.length>1) varSets.push(ppms);
+  if(colIds.length>1) varSets.push(colIds);
+  if(ptypes.length>1) varSets.push(ptypes);
+  if(psizes.length>1) varSets.push(psizes);
+  if(bInits.length>1) varSets.push(bInits);
+  if(deltaBs.length>1) varSets.push(deltaBs);
+  if(gradTimes.length>1) varSets.push(gradTimes);
+
+  // Sort variable sets by number of levels (descending) to combine largest together
+  varSets.sort((a,b)=>b.length-a.length);
+
+  let combos=[];
+  if(varSets.length===0){
+    combos.push({});
+  } else {
+    const maxLen=varSets[0].length;
+    for(let i=0;i<maxLen;i++) combos.push({idx:i});
+  }
+
+  function getAt(arr,i){return arr[Math.min(i,arr.length-1)];}
+
+  const off=document.createElement('canvas');off.width=960;off.height=540;
+  lcRes=[];
+  let totalRuns=0;
+
+  combos.forEach((combo,ci)=>{
+    const i=combo.idx??ci;
+    const flow=getAt(flows,i);
+    const temp=getAt(temps,i);
+    const injVol=getAt(injvols,i);
+    const ppm=getAt(ppms,i);
+    const colId=getAt(colIds,i);
+    const ptype=getAt(ptypes,i);
+    const psize=getAt(psizes,i);
+    const phase=document.getElementById('colPhase').value;
+    const sysVol=+document.getElementById('sysVol').value||10;
+    const t0=+document.getElementById('deadTime').value||0.3;
+    const acid=document.getElementById('acidOn').checked;
+    const sampleOrgPct=+document.getElementById('sampleOrgPct').value||0;
+
+    const colVm=Math.PI*(colId/2/10)**2*15*0.63;
+    const bInit=getAt(bInits,i);
+    const deltaB=getAt(deltaBs,i);
+    const bFinal=Math.min(100,bInit+deltaB);
+    const gradTime=getAt(gradTimes,i);
+    const isGradient=deltaB>=0.5;
+
+    let params={
+      flow,temp,injVol,colId,ptype,psize,phase,sysVol,t0,acid,sampleOrgPct,
+      colVm,bInit,deltaB,bFinal,gradTime,orgSolvG,
+      mode:isGradient?'grad':'iso' // kept for buildGradientProfile/buildPressureProfile
+    };
+
+    const N=calcPlates(params);
+    const P=calcPressure(params);
+
+    // Build peaks — skip compounds that don't elute (k sentinel = -1)
+    const runPeaks=[];
+    compounds.forEach(cpd=>{
+      // Reset per-compound gradient state flags
+      params._b_steep=null;params._k0=null;params._t0_real=null;params._post_grad=false;
+      const k=calcRetentionFactor(cpd,params);
+      if(k<0) return; // doesn't elute under this gradient/condition
+      const ps=calcPeakShape(cpd,params,k,N);
+      runPeaks.push({...ps,name:cpd.name,color:cpd.color});
+    });
+
+    // Normalize peak heights so all peaks have equal AREA
+    // Area of Gaussian ≈ height * width * sqrt(2π)/2.355 ∝ height * fwhm
+    // To equalize area: height_i = targetArea / width_i
+    if(runPeaks.length>0){
+      const targetArea=3000; // reference area unit
+      runPeaks.forEach(p=>{
+        p.height=Math.max(100, targetArea / Math.max(0.001, p.width));
+      });
+    }
+
+    // Sort peaks by retention time
+    runPeaks.sort((a,b)=>a.tR-b.tR);
+
+    // Time window
+    let xMax2;
+    if(isGradient){
+      const t0r=params.colVm/params.flow;
+      const endOfGrad=t0r+params.gradTime;
+      const lastPeak=runPeaks.length?Math.max(...runPeaks.map(p=>p.tR)):endOfGrad;
+      xMax2=Math.max(endOfGrad,lastPeak)*1.1+t0r;
+    } else {
+      const maxTR=runPeaks.length?Math.max(...runPeaks.map(p=>p.tR)):5;
+      xMax2=maxTR+maxTR*0.15+t0;
+    }
+
+    const gradProfile=buildGradientProfile(params,xMax2);
+    const pressureProfile=buildPressureProfile(params,xMax2);
+
+    // Use selected pts/min for signal resolution
+    const sig=buildSig(runPeaks,0,xMax2,document.getElementById('moNoiseOn').checked?+document.getElementById('moNoise').value:0,+document.getElementById('moDrift').value||0,ppm);
+
+    // OniChrom filename
+    const oniName=buildOniName(params,ppm);
+
+    // Human-readable label
+    let lbl=`Run ${ci+1}`;
+    lbl+=isGradient?` | GRAD Bi=${bInit}% ΔB=${deltaB}% tG=${gradTime}min`
+                   :` | ISO ${bInit}%B`;
+    if(flows.length>1) lbl+=` | F=${fmtVal(flow)}`;
+    if(temps.length>1) lbl+=` | T=${temp}°C`;
+    if(psizes.length>1) lbl+=` | ${psize}µm`;
+    if(colIds.length>1) lbl+=` | ${colId}mm`;
+    if(ptypes.length>1) lbl+=` | ${ptype.toUpperCase()}`;
+    if(ppms.length>1) lbl+=` | ${ppm}pts/min`;
+
+    const cfg={
+      title:lbl,xL:'Retention Time (min)',yL:'Intensity (a.u.)',
+      N,P,params,gradProfile,pressureProfile,ppm
+    };
+    draw(off,sig,runPeaks,cfg,{annotate:annState,overlays:overlayState,gradProfile});
+    lcRes.push({
+      name:oniName,
+      label:lbl,
+      png:off.toDataURL('image/png'),
+      csv:toCSV(sig),
+      data:sig,peaks:runPeaks,cfg,
+      N,P,params,gradProfile,pressureProfile
+    });
+    totalRuns++;
+  });
+
+  showList('lcList',lcRes,0);
+  document.getElementById('lcBox').style.display='';
+  prvwLC(lcRes,0);
+
+  if(lcRes.length){
+    const r=lcRes[0];
+    document.getElementById('moRunCount').textContent=lcRes.length;
+    document.getElementById('moPressure').textContent=r.P;
+    const presEl=document.getElementById('moPressure');
+    presEl.className=r.P>1000?'danger-val':r.P>600?'warn-val':'ok-val';
+    document.getElementById('moPlates').textContent=r.N?r.N.toLocaleString():'—';
+  }
+  notify(`${totalRuns} run${totalRuns>1?'s':''} generated!`);
+  if(compareMode) renderCmpBtns();
+}
+
+function showList(lid,res,activeIdx){
+  const el=document.getElementById(lid);el.innerHTML='';
+  res.forEach((r,i)=>{
+    const wrap=document.createElement('div');
+    const item=document.createElement('div');
+    item.className='ri'+(i===activeIdx?' act':'');
+    item.style.flexDirection='column';item.style.alignItems='stretch';item.style.padding='0';
+
+    const top=document.createElement('div');
+    top.style.cssText='display:flex;align-items:center;padding:5px 9px;gap:7px;cursor:pointer';
+    top.innerHTML=`<div class="sdot"></div>`+
+      `<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:9px">${r.label||r.name}</span>`+
+      `<button class="ri-export" title="Send to…" onclick="event.stopPropagation();toggleSendRow(${i})">Send →</button>`;
+
+    const sendRow=document.createElement('div');
+    sendRow.id=`sendRow-${i}`;
+    sendRow.style.cssText='display:none;padding:4px 9px 6px 22px;gap:4px;flex-wrap:wrap';
+    sendRow.innerHTML=
+      `<button class="btn bs bsm" style="flex:1" onclick="exportRunToTabs(${i},'cc')">→ Customize</button>`+
+      `<button class="btn bs bsm" style="flex:1" onclick="exportRunToTabs(${i},'qa')">→ QA</button>`+
+      `<button class="btn bs bsm" style="flex:1" onclick="exportRunToTabs(${i},'both')">→ Both</button>`;
+
+    top.onclick=(e)=>{
+      if(e.target.closest('.ri-export')) return;
+      el.querySelectorAll('.ri').forEach(x=>x.classList.remove('act'));
+      item.classList.add('act');
+      if(lid==='lcList') prvwLC(res,i);
+    };
+
+    item.appendChild(top);
+    item.appendChild(sendRow);
+    wrap.appendChild(item);
+    el.appendChild(wrap);
+  });
+}
+
+function toggleSendRow(i){
+  const row=document.getElementById(`sendRow-${i}`);
+  if(!row) return;
+  const open=row.style.display==='flex';
+  // close all
+  document.querySelectorAll('[id^="sendRow-"]').forEach(r=>r.style.display='none');
+  if(!open) row.style.display='flex';
+}
+
+
+// ════════════════════════════════════════════════════════════════
+// COMPARE MODE
+// ════════════════════════════════════════════════════════════════
+let compareMode=false;
+let compareSelected=[]; // indices into lcRes, max 4
+const CMP_COLORS=['#1d4ed8','#dc2626','#16a34a','#d97706'];
+
+function toggleCompare(){
+  compareMode=!compareMode;
+  document.getElementById('cmp-toggle').classList.toggle('on', compareMode);
+  document.getElementById('cmpBar').style.display=compareMode?'block':'none';
+  if(!compareMode){compareSelected=[];drawLC(lastLCData,lastLCPeaks,lastLCCfg,lastLCCfg.gradProfile,lastLCCfg.pressureProfile);}
+  else renderCmpBtns();
+}
+
+function clearCompare(){
+  compareSelected=[];
+  renderCmpBtns();
+  if(lastLCData) drawLC(lastLCData,lastLCPeaks,lastLCCfg,lastLCCfg.gradProfile,lastLCCfg.pressureProfile);
+}
+
+function toggleCmpRun(i){
+  if(compareSelected.includes(i)){
+    compareSelected=compareSelected.filter(x=>x!==i);
+  } else {
+    if(compareSelected.length>=4){notify('Max 4 runs in compare','warn');return;}
+    compareSelected.push(i);
+  }
+  renderCmpBtns();
+  drawCompare();
+}
+
+function renderCmpBtns(){
+  const wrap=document.getElementById('cmpRunBtns');
+  if(!wrap||!lcRes.length) return;
+  wrap.innerHTML='';
+  lcRes.forEach((r,i)=>{
+    const on=compareSelected.includes(i);
+    const ci=compareSelected.indexOf(i);
+    const color=on?CMP_COLORS[ci]:'';
+    const btn=document.createElement('button');
+    btn.className='ann-btn'+(on?' on':'');
+    btn.style.cssText=on?`border-color:${color};color:${color};background:${color}18`:'';
+    btn.textContent=`R${i+1}`;
+    btn.title=r.label||r.name;
+    btn.onclick=()=>toggleCmpRun(i);
+    wrap.appendChild(btn);
+  });
+}
+
+function drawCompare(){
+  if(!compareSelected.length){
+    if(lastLCData) drawLC(lastLCData,lastLCPeaks,lastLCCfg,lastLCCfg.gradProfile,lastLCCfg.pressureProfile);
+    return;
+  }
+  const canvas=document.getElementById('cv');
+  const ctx=canvas.getContext('2d');
+  const W=canvas.width,H=canvas.height;
+  const Pad={t:50,r:70,b:60,l:75};
+  const pw=W-Pad.l-Pad.r,ph=H-Pad.t-Pad.b;
+  ctx.clearRect(0,0,W,H);ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);
+
+  // Determine axis range across all selected runs
+  let x0=Infinity,x1=-Infinity,maxY=0;
+  compareSelected.forEach(i=>{
+    const d=lcRes[i].data;
+    if(!d||!d.length) return;
+    x0=Math.min(x0,d[0].t); x1=Math.max(x1,d[d.length-1].t);
+    maxY=Math.max(maxY,...d.map(p=>p.y));
+  });
+  if(!isFinite(x0)){x0=0;x1=20;}
+  maxY=maxY*1.12||1;
+
+  const tx=t=>Pad.l+(t-x0)/(x1-x0)*pw;
+  const ty=y=>Pad.t+ph-(y/maxY)*ph;
+  const fontSize=+document.getElementById('chartFontSize')?.value||10;
+
+  // Grid
+  ctx.font=`${fontSize}px "IBM Plex Mono"`;
+  for(let i=0;i<=5;i++){
+    const y=Pad.t+ph*i/5;
+    ctx.strokeStyle='#e5e7eb';ctx.lineWidth=0.5;
+    ctx.beginPath();ctx.moveTo(Pad.l,y);ctx.lineTo(Pad.l+pw,y);ctx.stroke();
+    const v=maxY*(1-i/5);
+    ctx.fillStyle='#5a6478';ctx.textAlign='right';
+    ctx.fillText(v>=1000?(v/1000).toFixed(1)+'k':v.toFixed(0),Pad.l-6,y+4);
+  }
+  const xTick=+document.getElementById('chartXTick')?.value||0;
+  const xStep=xTick>0?xTick:(x1-x0)/10;
+  for(let t=x0;t<=x1+1e-9;t+=xStep){
+    const x=tx(t);
+    ctx.strokeStyle='#e5e7eb';ctx.lineWidth=0.5;
+    ctx.beginPath();ctx.moveTo(x,Pad.t);ctx.lineTo(x,Pad.t+ph);ctx.stroke();
+    ctx.fillStyle='#5a6478';ctx.textAlign='center';
+    ctx.fillText(t.toFixed(1),x,Pad.t+ph+16);
+  }
+  // Axes
+  ctx.strokeStyle='#2a3550';ctx.lineWidth=1.5;ctx.beginPath();
+  ctx.moveTo(Pad.l,Pad.t);ctx.lineTo(Pad.l,Pad.t+ph);ctx.lineTo(Pad.l+pw,Pad.t+ph);ctx.stroke();
+
+  // Draw each selected run
+  compareSelected.forEach((ri,ci)=>{
+    const r=lcRes[ri];if(!r||!r.data||!r.data.length) return;
+    const d=r.data;
+    const col=CMP_COLORS[ci];
+    // Fill
+    ctx.beginPath();ctx.moveTo(tx(d[0].t),ty(0));
+    d.forEach(p=>ctx.lineTo(tx(p.t),ty(p.y)));
+    ctx.lineTo(tx(d[d.length-1].t),ty(0));ctx.closePath();
+    ctx.fillStyle=col+'18';ctx.fill();
+    // Line
+    ctx.beginPath();ctx.moveTo(tx(d[0].t),ty(d[0].y));
+    d.slice(1).forEach(p=>ctx.lineTo(tx(p.t),ty(p.y)));
+    ctx.strokeStyle=col;ctx.lineWidth=1.8;ctx.stroke();
+  });
+
+  // Legend
+  compareSelected.forEach((ri,ci)=>{
+    const r=lcRes[ri];if(!r) return;
+    const col=CMP_COLORS[ci];
+    const lx=Pad.l+10+ci*220, ly=Pad.t+16;
+    ctx.fillStyle=col;ctx.fillRect(lx,ly-8,18,4);
+    ctx.font=`bold ${fontSize}px "IBM Plex Sans"`;ctx.fillStyle='#1a2744';ctx.textAlign='left';
+    ctx.fillText(`R${ri+1}: ${(r.label||r.name).substring(0,28)}`,lx+22,ly);
+  });
+
+  // Title + axis labels
+  ctx.fillStyle='#1a2744';ctx.font=`bold ${fontSize+3}px "IBM Plex Sans"`;ctx.textAlign='center';ctx.setLineDash([]);
+  ctx.fillText('Run Comparison',W/2,30);
+  ctx.fillStyle='#3d4452';ctx.font=`${fontSize+1}px "IBM Plex Sans"`;
+  ctx.fillText('Retention Time (min)',Pad.l+pw/2,H-10);
+  ctx.save();ctx.translate(14,Pad.t+ph/2);ctx.rotate(-Math.PI/2);ctx.fillText('Intensity (a.u.)',0,0);ctx.restore();
+}
+
+function showSendPopup(){}  // no-op — replaced by inline send rows
+function closeSendPopup(){} // no-op
+
+
+function prvwLC(res,idx){
+  const r=res[idx];if(!r)return;
+  lastLCData=r.data;lastLCPeaks=r.peaks;lastLCCfg=r.cfg||{};
+  if(r.N) document.getElementById('moPlates').textContent=r.N.toLocaleString();
+  if(r.P){
+    document.getElementById('moPressure').textContent=r.P;
+    const presEl=document.getElementById('moPressure');
+    presEl.className=r.P>1000?'danger-val':r.P>600?'warn-val':'ok-val';
+  }
+  if(compareMode) drawCompare();
+  else drawLC(r.data,r.peaks,r.cfg||{},r.gradProfile,r.pressureProfile);
+}
+
+function redraw(){
+  if(!lastLCData||!lastLCData.length)return;
+  drawLC(lastLCData,lastLCPeaks,lastLCCfg,lastLCCfg.gradProfile,lastLCCfg.pressureProfile);
+}
+function resetWindow(){
+  document.getElementById('wxMin').value='';
+  document.getElementById('wxMax').value='';
+  redraw();
+}
+
+// ════════════════════════════════════════════════════════════════
+// LC DRAW FUNCTION — with all overlays
+// ════════════════════════════════════════════════════════════════
+function drawLC(data, plist, cfg, gradProfile, pressureProfile){
+  const canvas=document.getElementById('cv');
+  const ctx=canvas.getContext('2d');
+  const W=canvas.width,H=canvas.height;
+  const Pad={t:50,r:70,b:60,l:75}; // wider right margin for right-axis labels
+  const pw=W-Pad.l-Pad.r,ph=H-Pad.t-Pad.b;
+  ctx.clearRect(0,0,W,H);ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);
+
+  const wxMin=document.getElementById('wxMin').value;
+  const wxMax=document.getElementById('wxMax').value;
+  const x0=wxMin!==''?+wxMin:(data.length?data[0].t:0);
+  const x1=wxMax!==''?+wxMax:(data.length?data[data.length-1].t:20);
+  const autoMaxY=data.length?Math.max(...data.map(d=>d.y),1)*1.12:1;
+  const maxY=autoMaxY;
+
+  // Chart cosmetics from controls
+  const showGrid=!document.getElementById('chartGrid')||document.getElementById('chartGrid').checked;
+  const showLabels=!document.getElementById('chartLabels')||document.getElementById('chartLabels').checked;
+  const xTickStep=+document.getElementById('chartXTick')?.value||0;
+  const fontSize=+document.getElementById('chartFontSize')?.value||10;
+  const peakColor=document.getElementById('chartPeakColor')?.value||'#1a5fb4';
+
+  const tx=t=>Pad.l+(t-x0)/(x1-x0)*pw;
+  const ty=y=>Pad.t+ph-(y/maxY)*ph;
+  // Right-axis normaliser: maps a value [0,maxVal] to canvas y
+  const tyR=(v,maxV)=>Pad.t+ph-(v/Math.max(maxV,0.01))*ph;
+
+  // ── HELPER: draw a right-axis overlay line ──
+  function drawOverlayLine(pts, valKey, color, label, maxVal, dash=[4,3]){
+    if(!pts||!pts.length) return;
+    ctx.save();
+    ctx.strokeStyle=color;ctx.lineWidth=1.3;ctx.setLineDash(dash);
+    ctx.beginPath();
+    let first=true;
+    pts.forEach(pt=>{
+      if(pt.t<x0||pt.t>x1) return;
+      const py2=tyR(pt[valKey],maxVal);
+      if(first){ctx.moveTo(tx(pt.t),py2);first=false;}
+      else ctx.lineTo(tx(pt.t),py2);
+    });
+    ctx.stroke();ctx.setLineDash([]);
+    // Axis label (top-right area, stacked)
+    ctx.fillStyle=color;ctx.font='bold 9px "IBM Plex Mono"';ctx.textAlign='left';
+    ctx.restore();
+  }
+
+  // ── %B PROFILE overlay ──
+  if(overlayState.pctb && gradProfile && gradProfile.length>1){
+    // Background tint
+    ctx.save();
+    const grad=ctx.createLinearGradient(Pad.l,0,Pad.l+pw,0);
+    gradProfile.forEach(pt=>{
+      const fx=(pt.t-x0)/(x1-x0);
+      if(fx<0||fx>1) return;
+      grad.addColorStop(Math.max(0,Math.min(1,fx)),`rgba(124,58,237,${pt.pct/100*0.06})`);
+    });
+    ctx.fillStyle=grad;ctx.fillRect(Pad.l,Pad.t,pw,ph);ctx.restore();
+    // Line
+    drawOverlayLine(gradProfile,'pct','rgba(124,58,237,0.85)','%B',100);
+  }
+
+  // ── GRID ──
+  ctx.font=`${fontSize-1}px "IBM Plex Mono",monospace`;
+  for(let i=0;i<=5;i++){
+    const y=Pad.t+ph*i/5;
+    if(showGrid){ctx.strokeStyle='#e8ecf1';ctx.lineWidth=0.5;ctx.beginPath();ctx.moveTo(Pad.l,y);ctx.lineTo(Pad.l+pw,y);ctx.stroke();}
+    const v=maxY*(1-i/5);
+    ctx.fillStyle='#5a6478';ctx.textAlign='right';
+    ctx.fillText(v>=1e6?(v/1e6).toFixed(1)+'M':v>=1000?(v/1000).toFixed(1)+'k':v.toFixed(0),Pad.l-5,y+3);
+  }
+  // X-axis ticks: use custom step if set, otherwise auto (10 divisions)
+  const xRange=x1-x0;
+  const tickStep=xTickStep>0?xTickStep:xRange/10;
+  const tickStart=Math.ceil(x0/tickStep)*tickStep;
+  for(let t=tickStart;t<=x1+tickStep*0.01;t+=tickStep){
+    const x=tx(t);
+    if(showGrid){ctx.strokeStyle='#e8ecf1';ctx.lineWidth=0.5;ctx.beginPath();ctx.moveTo(x,Pad.t);ctx.lineTo(x,Pad.t+ph);ctx.stroke();}
+    ctx.fillStyle='#5a6478';ctx.textAlign='center';
+    ctx.fillText(t.toFixed(tickStep<1?1:0),x,Pad.t+ph+15);
+  }
+  ctx.strokeStyle='#2a3550';ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.moveTo(Pad.l,Pad.t);ctx.lineTo(Pad.l,Pad.t+ph);ctx.lineTo(Pad.l+pw,Pad.t+ph);ctx.stroke();
+
+  // ── CHROMATOGRAM ──
+  if(overlayState.chroma && data.length){
+    const rgb=peakColor; // hex like #1a5fb4
+    ctx.beginPath();ctx.moveTo(tx(data[0].t),ty(0));
+    for(const d of data) ctx.lineTo(tx(d.t),ty(d.y));
+    ctx.lineTo(tx(data[data.length-1].t),ty(0));ctx.closePath();
+    ctx.fillStyle=peakColor+'18';ctx.fill();
+    ctx.beginPath();ctx.moveTo(tx(data[0].t),ty(data[0].y));
+    for(let i=1;i<data.length;i++) ctx.lineTo(tx(data[i].t),ty(data[i].y));
+    ctx.strokeStyle=peakColor;ctx.lineWidth=1.8;ctx.stroke();
+  }
+
+  // ── PRESSURE overlay ──
+  if(overlayState.pressure && pressureProfile && pressureProfile.length>1){
+    const maxP=Math.max(...pressureProfile.map(p=>p.P),1)*1.1;
+    drawOverlayLine(pressureProfile,'P','rgba(239,68,68,0.85)','P',maxP,[3,2]);
+    // Right axis ticks for pressure
+    ctx.save();
+    ctx.fillStyle='rgba(239,68,68,0.85)';ctx.font='8px "IBM Plex Mono"';ctx.textAlign='left';
+    for(let i=0;i<=4;i++){
+      const v=maxP*i/4;
+      const y=tyR(v,maxP);
+      ctx.fillText(Math.round(v)+'b',W-Pad.r+3,y+3);
+    }
+    ctx.fillStyle='rgba(239,68,68,0.85)';ctx.font='bold 9px "IBM Plex Mono"';
+    ctx.fillText('P(bar)',W-Pad.r+3,Pad.t+14);
+    ctx.restore();
+  }
+
+  // ── FLOW overlay (constant line — shows the flow rate set for this run) ──
+  if(overlayState.flow && cfg.params){
+    const flowVal=cfg.params.flow;
+    const maxFlow=flowVal*1.5||1;
+    // Draw as a flat line at flowVal
+    const flowPts=[{t:x0,flow:flowVal},{t:x1,flow:flowVal}];
+    ctx.save();
+    ctx.strokeStyle='rgba(34,197,94,0.85)';ctx.lineWidth=1.3;ctx.setLineDash([6,3]);
+    ctx.beginPath();
+    ctx.moveTo(tx(x0), tyR(flowVal,maxFlow));
+    ctx.lineTo(tx(x1), tyR(flowVal,maxFlow));
+    ctx.stroke();ctx.setLineDash([]);
+    // Right axis label
+    ctx.fillStyle='rgba(34,197,94,0.85)';ctx.font='bold 9px "IBM Plex Mono"';ctx.textAlign='left';
+    ctx.fillText('F(mL)',W-Pad.r+3,Pad.t+26);
+    ctx.font='8px "IBM Plex Mono"';
+    ctx.fillText(flowVal.toFixed(2),W-Pad.r+3, tyR(flowVal,maxFlow)+3);
+    ctx.restore();
+  }
+
+  // ── TEMPERATURE overlay (constant line) ──
+  if(overlayState.temp && cfg.params){
+    const tempVal=cfg.params.temp;
+    const maxTemp=100;
+    ctx.save();
+    ctx.strokeStyle='rgba(245,158,11,0.85)';ctx.lineWidth=1.3;ctx.setLineDash([2,3]);
+    ctx.beginPath();
+    ctx.moveTo(tx(x0), tyR(tempVal,maxTemp));
+    ctx.lineTo(tx(x1), tyR(tempVal,maxTemp));
+    ctx.stroke();ctx.setLineDash([]);
+    ctx.fillStyle='rgba(245,158,11,0.85)';ctx.font='bold 9px "IBM Plex Mono"';ctx.textAlign='left';
+    ctx.fillText('T(°C)',W-Pad.r+3,Pad.t+38);
+    ctx.font='8px "IBM Plex Mono"';
+    ctx.fillText(tempVal+'°',W-Pad.r+3, tyR(tempVal,maxTemp)+3);
+    ctx.restore();
+  }
+
+  // ── OVERLAY LEGEND (right-axis labels stacked) ──
+  {
+    const labels=[];
+    if(overlayState.pctb) labels.push({txt:'%B',col:'rgba(124,58,237,0.85)'});
+    if(overlayState.pressure) labels.push({txt:'P',col:'rgba(239,68,68,0.85)'});
+    if(overlayState.flow) labels.push({txt:'F',col:'rgba(34,197,94,0.85)'});
+    if(overlayState.temp) labels.push({txt:'T',col:'rgba(245,158,11,0.85)'});
+    if(labels.length){
+      ctx.font='bold 8px "IBM Plex Mono"';
+      labels.forEach((l,idx)=>{
+        ctx.fillStyle=l.col;ctx.textAlign='left';
+        ctx.fillText(l.txt, W-Pad.r+4, Pad.t+12+idx*12);
+      });
+    }
+  }
+
+  // ── PEAK LABELS + ANNOTATIONS ──
+  if(showLabels) plist.forEach((p,i)=>{
+    if(!p.tR||p.tR<x0||p.tR>x1) return;
+    const px2=tx(p.tR),py2=ty(p.height*0.998);
+    ctx.fillStyle=p.color||peakColor;
+    ctx.font=`bold ${fontSize}px "IBM Plex Sans",sans-serif`;ctx.textAlign='center';
+    if(annState.name && p.name) ctx.fillText(p.name,px2,py2-20);
+    else ctx.fillText(`P${i+1}`,px2,py2-12);
+    ctx.strokeStyle=p.color||peakColor;ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(px2,py2-7);ctx.lineTo(px2,py2);ctx.stroke();
+    if(annState.tr){
+      ctx.fillStyle='#3d4452';ctx.font=`${fontSize-1}px "IBM Plex Mono"`;ctx.textAlign='center';
+      ctx.fillText(`${p.tR.toFixed(2)}min`,px2,py2-32);
+    }
+    if(annState.fwhm){
+      const hw=p.width/2,yfwhm=ty(p.height/2);
+      ctx.strokeStyle='#c27200';ctx.lineWidth=1;ctx.setLineDash([2,2]);
+      ctx.beginPath();ctx.moveTo(tx(p.tR-hw),yfwhm);ctx.lineTo(tx(p.tR+hw),yfwhm);ctx.stroke();
+      ctx.setLineDash([]);ctx.fillStyle='#c27200';ctx.font=`${fontSize-2}px "IBM Plex Mono"`;
+      ctx.fillText(`W=${p.width.toFixed(3)}`,px2,yfwhm-4);
+    }
+    if(annState.ht){
+      ctx.fillStyle='#5a6478';ctx.font=`${fontSize-2}px "IBM Plex Mono"`;ctx.textAlign='center';
+      ctx.fillText(`h=${p.height>1000?(p.height/1000).toFixed(1)+'k':p.height.toFixed(0)}`,px2,ty(p.height)-18);
+    }
+  });
+
+  // ── RESOLUTION BRACKETS ──
+  if(annState.rs && plist.length>1){
+    for(let i=0;i<plist.length-1;i++){
+      const p1=plist[i],p2=plist[i+1];
+      if(!p1.tR||!p2.tR) continue;
+      const rs=1.18*(p2.tR-p1.tR)/(p1.width+p2.width);
+      const midT=(p1.tR+p2.tR)/2;
+      if(midT<x0||midT>x1) continue;
+      ctx.fillStyle=rs>=1.5?'#15803d':rs>=1.0?'#c27200':'#c0392b';
+      ctx.font=`bold ${fontSize-1}px "IBM Plex Mono"`;ctx.textAlign='center';
+      ctx.fillText(`Rs=${rs.toFixed(2)}`,tx(midT),Pad.t+8);
+    }
+  }
+
+  // ── SHAPE INDICATOR ──
+  plist.forEach((p)=>{
+    if(!p.tR||!p.shape||p.shape==='none'||p.tR<x0||p.tR>x1) return;
+    ctx.fillStyle=p.shape==='fronting'?'rgba(192,57,43,0.75)':'rgba(26,111,186,0.75)';
+    ctx.font=`${fontSize-2}px "IBM Plex Mono"`;ctx.textAlign='center';
+    ctx.fillText(`As=${p.As?.toFixed(2)||'?'}`,tx(p.tR),ty(p.height*0.5));
+  });
+
+  // ── TITLE & AXIS LABELS ──
+  ctx.fillStyle='#1a2744';ctx.font=`bold ${fontSize+3}px "IBM Plex Sans",sans-serif`;ctx.textAlign='center';ctx.setLineDash([]);
+  ctx.fillText(cfg.title||'Virtual LC Chromatogram',W/2,30);
+  if(cfg.N||cfg.P){
+    ctx.fillStyle='#5a6478';ctx.font=`${fontSize-1}px "IBM Plex Mono"`;
+    const info=[];
+    if(cfg.N) info.push(`N≈${cfg.N.toLocaleString()}`);
+    if(cfg.P) info.push(`P≈${cfg.P} bar`);
+    ctx.fillText(info.join('   '),W/2,44);
+  }
+  ctx.fillStyle='#3d4452';ctx.font=`${fontSize+1}px "IBM Plex Sans",sans-serif`;ctx.textAlign='center';
+  ctx.fillText(cfg.xL||'Retention Time (min)',Pad.l+pw/2,H-10);
+  ctx.save();ctx.translate(14,Pad.t+ph/2);ctx.rotate(-Math.PI/2);ctx.fillText(cfg.yL||'Intensity (a.u.)',0,0);ctx.restore();
+}
+
+// ════════════════════════════════════════════════════════════════
+// EXPORT RUN CONDITIONS TO OTHER TABS
+// ════════════════════════════════════════════════════════════════
+function exportRunToTabs(idx, target='both'){
+  const r=lcRes[idx];if(!r)return;
+
+  if(target==='cc'||target==='both'){
+    manualPeaks=r.peaks.map((p,i)=>({
+      id:Date.now()+i+Math.random(),
+      rt:p.tR, width:p.width||0.1, height:p.height||3000,
+      shape:p.shape||'none', As:p.As||1.0,
+      color:p.color||CLR[i%CLR.length],
+      name:p.name||`P${i+1}`  // ← carry compound name
+    }));
+    const maxRT=manualPeaks.length?Math.max(...manualPeaks.map(p=>p.rt)):10;
+    document.getElementById('xMax').value=(maxRT*1.15+0.5).toFixed(1);
+    document.getElementById('chromaTitle').value=r.label||r.name;
+    renderManualPeaks(); genSingle();
+  }
+
+  if(target==='qa'||target==='both'){
+    calPeaks=r.peaks.map((p,i)=>({
+      id:Date.now()+i+1000+Math.random(),
+      rt:p.tR, width:p.width||0.1, height:p.height||3000,
+      shape:p.shape||'none', As:p.As||1.0,
+      color:p.color||CLR[i%CLR.length],
+      name:p.name||`P${i+1}`,  // ← carry compound name
+      calScale:i===0
+    }));
+    const maxRT=r.peaks.length?Math.max(...r.peaks.map(p=>p.tR)):10;
+    document.getElementById('cxMax').value=(maxRT*1.15+0.5).toFixed(1);
+    renderCalPeaks();
+  }
+
+  const dest=target==='cc'?'Customize Chromatogram':target==='qa'?'Quantitative Analysis':'both tabs';
+  notify(`Run ${idx+1} sent to ${dest}!`);
+  if(target==='cc'||target==='both') switchTab('cc');
+  else if(target==='qa') switchTab('qa');
+}
+
+// Send current Customize state (peaks + noise/baseline settings) to QA
+function sendCustomizeToQA(){
+  if(!manualPeaks.length){notify('No peaks to send','warn');return;}
+  calPeaks=manualPeaks.map((p,i)=>({
+    id:Date.now()+i+Math.random(),
+    rt:p.rt, width:p.width||0.1, height:p.height||3000,
+    shape:p.shape||'none', As:p.As||1.0,
+    color:p.color||CLR[i%CLR.length],
+    name:p.name||`P${i+1}`,
+    calScale:i===0
+  }));
+  // Copy noise/baseline settings to QA
+  const noiseVal=document.getElementById('noise').value;
+  const driftVal=document.getElementById('drift').value;
+  const noiseOn=document.getElementById('noiseOn').checked;
+  const qaNoiseOn=document.getElementById('qaNoiseOn');
+  const qaNoise=document.getElementById('qaNoise');
+  const qaDrift=document.getElementById('qaDrift');
+  if(qaNoiseOn) qaNoiseOn.checked=noiseOn;
+  if(qaNoise){qaNoise.value=noiseVal;document.getElementById('qaNoiseL').textContent=noiseVal;}
+  if(qaDrift) qaDrift.value=driftVal;
+  const maxRT=Math.max(...calPeaks.map(p=>p.rt),5);
+  document.getElementById('cxMax').value=(maxRT*1.15+0.5).toFixed(1);
+  renderCalPeaks();
+  notify('Customize settings sent to Quantitative Analysis!');
+  switchTab('qa');
+}
+function sendCustomizeToMO(){
+  // Copy pts/min
+  const ppmVal=document.getElementById('ppm').value;
+  const lcppm=document.getElementById('lcppm');
+  const lcppmN=document.getElementById('lcppmN');
+  if(lcppm) lcppm.value=ppmVal;
+  if(lcppmN) lcppmN.value=ppmVal;
+
+  // Copy noise
+  const noiseOn=document.getElementById('noiseOn').checked;
+  const noiseVal=document.getElementById('noise').value;
+  const moNoiseOn=document.getElementById('moNoiseOn');
+  const moNoise=document.getElementById('moNoise');
+  const moNoiseL=document.getElementById('moNoiseL');
+  if(moNoiseOn) moNoiseOn.checked=noiseOn;
+  if(moNoise){moNoise.value=noiseVal;}
+  if(moNoiseL) moNoiseL.textContent=noiseVal;
+
+  // Copy baseline drift
+  const driftVal=document.getElementById('drift').value;
+  const moDrift=document.getElementById('moDrift');
+  if(moDrift) moDrift.value=driftVal;
+
+  notify('Detector & baseline settings sent to Method Development!');
+  setMainTab('mo');
+}
+function sendToCustomize(){
+  if(!lastLCPeaks||!lastLCPeaks.length){notify('Generate first!','warn');return;}
+  // Convert LC peaks to manual peaks format
+  manualPeaks=lastLCPeaks.map((p,i)=>({
+    id:Date.now()+i+Math.random(),
+    rt:p.tR,
+    width:p.width||0.5,
+    height:p.height||3000,
+    shape:p.shape||'none',
+    As:p.As||1.0,
+    color:p.color||CLR[i%CLR.length],
+    name:p.name||`P${i+1}`
+  }));
+  // Set time window
+  const maxRT=Math.max(...manualPeaks.map(p=>p.rt));
+  document.getElementById('xMax').value=(maxRT+maxRT*0.15+2).toFixed(1);
+  renderManualPeaks();
+  setMainTab('cc');
+  genSingle();
+  notify('Run data sent to Customize Chromatogram!');
+}
+
+// ════════════════════════════════════════════════════════════════
+// CUSTOMIZE CHROMATOGRAM (SINGLE)
+// ════════════════════════════════════════════════════════════════
+function addManualPeak(d={}){
+  if(manualPeaks.length>=20){notify('Max 20 peaks','warn');return;}
+  const i=manualPeaks.length;
+  manualPeaks.push({
+    id:Date.now()+Math.random(),
+    rt:d.rt||(3+i*3),width:d.width||0.5,height:d.height||3000,
+    shape:d.shape||'none',As:d.As||1.0,color:d.color||CLR[i%CLR.length]
+  });
+  renderManualPeaks();
+}
+function removeManualPeak(id){
+  manualPeaks=manualPeaks.filter(p=>p.id!==id);
+  renderManualPeaks();
+  document.getElementById('peakD').textContent=manualPeaks.length;
+}
+function setMP(id,field,val){const p=manualPeaks.find(x=>x.id===id);if(p)p[field]=val;}
+function togMPBody(uid){document.getElementById('mpb'+uid)?.classList.toggle('open');}
+
+function renderManualPeaks(){
+  const list=document.getElementById('pkList-s');
+  list.innerHTML='';
+  manualPeaks.forEach((p,i)=>{
+    const uid=p.id;
+    const card=document.createElement('div');card.className='pkcard';
+    card.innerHTML=`
+      <div class="pkhead" onclick="togMPBody(${uid})">
+        <div class="pklbl"><span class="pkdot" style="background:${p.color}"></span>PEAK ${i+1} — RT ${p.rt.toFixed(2)} min</div>
+        <button class="pkrm" onclick="event.stopPropagation();removeManualPeak(${uid})">✕</button>
+      </div>
+      <div class="pkbody" id="mpb${uid}">
+        <div class="r3">
+          <div class="f"><label>RT (min)</label><input type="number" value="${p.rt}" step="0.01" min="0" onchange="setMP(${uid},'rt',+this.value);renderManualPeaks()"></div>
+          <div class="f"><label>FWHM (min)</label><input type="number" value="${p.width}" step="0.01" min="0.01" onchange="setMP(${uid},'width',+this.value)"></div>
+          <div class="f"><label>Height</label><input type="number" value="${p.height}" step="50" min="10" onchange="setMP(${uid},'height',+this.value)"></div>
+        </div>
+        <div class="f"><label>Shape</label>
+          <select onchange="setMP(${uid},'shape',this.value);document.getElementById('mpar${uid}').style.display=this.value==='none'?'none':''">
+            <option value="none" ${p.shape==='none'?'selected':''}>Pure Gaussian</option>
+            <option value="tailing" ${p.shape==='tailing'?'selected':''}>Tailing (As>1)</option>
+            <option value="fronting" ${p.shape==='fronting'?'selected':''}>Fronting (As<1)</option>
+          </select>
+        </div>
+        <div id="mpar${uid}" style="${p.shape==='none'?'display:none':''}">
+          <label>As: <span id="mpav${uid}">${p.As.toFixed(2)}</span></label>
+          <input type="range" min="0.20" max="4.00" step="0.05" value="${p.As}"
+            oninput="document.getElementById('mpav${uid}').textContent=(+this.value).toFixed(2);setMP(${uid},'As',+this.value)">
+        </div>
+        <div class="f"><label>Color</label><div class="crow">
+          ${CLR.slice(0,10).map(c=>`<div class="csw ${c===p.color?'sel':''}" style="background:${c}"
+            onclick="setMP(${uid},'color','${c}');renderManualPeaks()"></div>`).join('')}
+        </div></div>
+      </div>`;
+    list.appendChild(card);
+  });
+  document.getElementById('peakD').textContent=manualPeaks.length;
+  document.getElementById('addPkS').style.opacity=manualPeaks.length>=20?'0.4':'1';
+}
+
+function genSingle(){
+  const xMin=+document.getElementById('xMin').value||0;
+  const xMax=+document.getElementById('xMax').value||20;
+  const noise=document.getElementById('noiseOn').checked?+document.getElementById('noise').value:0;
+  const drift=+document.getElementById('drift').value||0;
+  const ppm=+document.getElementById('ppm').value||24;
+  const data=buildSig(manualPeaks,xMin,xMax,noise,drift,ppm);
+  ccLastData=data;ccLastPeaks=[...manualPeaks];
+  ccLastCfg={
+    title:document.getElementById('chromaTitle').value,
+    xL:document.getElementById('xLabel').value,
+    yL:document.getElementById('yLabel').value
+  };
+  ccDraw(data,manualPeaks,ccLastCfg);
+}
+function ccRedraw(){
+  if(!ccLastData.length)return;
+  ccDraw(ccLastData,ccLastPeaks,ccLastCfg);
+}
+function ccResetWindow(){
+  document.getElementById('ccwxMin').value='';document.getElementById('ccwxMax').value='';document.getElementById('ccwyMax').value='';
+  ccRedraw();
+}
+function expSinglePNG(){
+  genSingle();
+  const n=(document.getElementById('chromaTitle').value||'Chromatogram').replace(/[^a-zA-Z0-9_\-\.]/g,'_');
+  const a=document.createElement('a');a.href=document.getElementById('cv2').toDataURL('image/png');a.download=n+'.png';a.click();
+  notify('PNG exported!');
+}
+function expSingleCSV(){
+  const xMin=+document.getElementById('xMin').value||0;
+  const xMax=+document.getElementById('xMax').value||20;
+  const noise=document.getElementById('noiseOn').checked?+document.getElementById('noise').value:0;
+  const drift=+document.getElementById('drift').value||0;
+  const ppm=+document.getElementById('ppm').value||24;
+  const data=buildSig(manualPeaks,xMin,xMax,noise,drift,ppm);
+  const n=(document.getElementById('chromaTitle').value||'Chromatogram').replace(/[^a-zA-Z0-9_\-\.]/g,'_');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([toCSV(data)],{type:'text/plain'}));
+  a.download=n+'.csv';a.click();
+  notify('CSV exported!');
+}
+
+function ccDraw(data,plist,cfg){
+  const canvas=document.getElementById('cv2');
+  const ctx=canvas.getContext('2d');
+  const W=canvas.width,H=canvas.height;
+  const P={t:52,r:32,b:62,l:82};
+  const pw=W-P.l-P.r,ph=H-P.t-P.b;
+  ctx.clearRect(0,0,W,H);ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);
+
+  const xMinV=document.getElementById('ccwxMin').value;
+  const xMaxV=document.getElementById('ccwxMax').value;
+  const yMaxV=document.getElementById('ccwyMax').value;
+  const autoMaxY=Math.max(...(data.map(d=>d.y)||[1]),1)*1.1;
+  const maxY=yMaxV!==''?+yMaxV:autoMaxY;
+  const fullX0=data[0]?.t||0,fullX1=data[data.length-1]?.t||20;
+  const x0=xMinV!==''?+xMinV:fullX0;
+  const x1=xMaxV!==''?+xMaxV:fullX1;
+
+  const tx=t=>P.l+(t-x0)/(x1-x0)*pw;
+  const ty=y=>P.t+ph-(y/maxY)*ph;
+
+  ctx.font='10px "IBM Plex Mono",monospace';
+  for(let i=0;i<=5;i++){
+    const y=P.t+ph*i/5;ctx.strokeStyle='#e5e7eb';ctx.lineWidth=0.5;
+    ctx.beginPath();ctx.moveTo(P.l,y);ctx.lineTo(P.l+pw,y);ctx.stroke();
+    const v=maxY*(1-i/5);ctx.fillStyle='#5a6478';ctx.textAlign='right';
+    ctx.fillText(v>=1000?(v/1000).toFixed(1)+'k':v.toFixed(0),P.l-6,y+4);
+  }
+  for(let i=0;i<=10;i++){
+    const t=x0+(x1-x0)*i/10,x=tx(t);
+    ctx.strokeStyle='#e5e7eb';ctx.lineWidth=0.5;
+    ctx.beginPath();ctx.moveTo(x,P.t);ctx.lineTo(x,P.t+ph);ctx.stroke();
+    ctx.fillStyle='#5a6478';ctx.textAlign='center';ctx.fillText(t.toFixed(1),x,P.t+ph+16);
+  }
+  ctx.strokeStyle='#2a3550';ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.moveTo(P.l,P.t);ctx.lineTo(P.l,P.t+ph);ctx.lineTo(P.l+pw,P.t+ph);ctx.stroke();
+
+  if(data.length){
+    ctx.beginPath();ctx.moveTo(tx(data[0].t),ty(0));
+    for(const d of data) ctx.lineTo(tx(d.t),ty(d.y));
+    ctx.lineTo(tx(data[data.length-1].t),ty(0));ctx.closePath();
+    ctx.fillStyle='rgba(37,99,235,0.07)';ctx.fill();
+    ctx.beginPath();ctx.moveTo(tx(data[0].t),ty(data[0].y));
+    for(let i=1;i<data.length;i++) ctx.lineTo(tx(data[i].t),ty(data[i].y));
+    ctx.strokeStyle='#1d4ed8';ctx.lineWidth=1.8;ctx.stroke();
+  }
+
+  plist.forEach((p,i)=>{
+    if(!p.rt||p.rt<x0||p.rt>x1)return;
+    const px2=tx(p.rt),py2=ty(p.height*.995);
+    ctx.fillStyle=p.color||'#1d4ed8';
+    ctx.font='bold 11px "IBM Plex Sans",sans-serif';ctx.textAlign='center';
+    ctx.fillText(`P${i+1}`,px2,py2-12);
+    ctx.strokeStyle=p.color||'#1d4ed8';ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(px2,py2-7);ctx.lineTo(px2,py2);ctx.stroke();
+    
+    if(ccAnnState.tr){
+      ctx.fillStyle='#2a3550';ctx.font='9px "IBM Plex Mono"';
+      ctx.fillText(`tR=${p.rt.toFixed(3)}min`,px2,py2-24);
+    }
+    if(ccAnnState.fwhm){
+      const hh=p.height/2;const hw=p.width/2;const yfwhm=ty(hh);
+      ctx.strokeStyle='#f59e0b';ctx.lineWidth=1.2;ctx.setLineDash([3,2]);
+      ctx.beginPath();ctx.moveTo(tx(p.rt-hw),yfwhm);ctx.lineTo(tx(p.rt+hw),yfwhm);ctx.stroke();
+      ctx.setLineDash([]);ctx.fillStyle='#f59e0b';ctx.font='9px "IBM Plex Mono"';
+      ctx.fillText(`FWHM=${p.width.toFixed(3)}`,px2,yfwhm-5);
+    }
+  });
+
+  ctx.fillStyle='#1a2744';ctx.font='bold 14px "IBM Plex Sans",sans-serif';ctx.textAlign='center';ctx.setLineDash([]);
+  ctx.fillText(cfg.title||'Chromatogram',W/2,32);
+  ctx.fillStyle='#2a3550';ctx.font='11px "IBM Plex Sans",sans-serif';ctx.textAlign='center';
+  ctx.fillText(cfg.xL||'Retention Time (min)',P.l+pw/2,H-10);
+  ctx.save();ctx.translate(14,P.t+ph/2);ctx.rotate(-Math.PI/2);
+  ctx.fillText(cfg.yL||'Intensity (a.u.)',0,0);ctx.restore();
+}
+
+// ════════════════════════════════════════════════════════════════
+// SIGNAL BUILDER (shared)
+// ════════════════════════════════════════════════════════════════
+function AsToTau(As,sigma){
+  const k=Math.sqrt(2*Math.log(10));
+  return Math.max(0,(As-1)*sigma*k);
+}
+function erfA(x){
+  const s=x<0?-1:1;x=Math.abs(x);
+  const t=1/(1+0.3275911*x);
+  return s*(1-(((((1.061405429*t-1.453152027)*t)+1.421413741)*t-0.284496736)*t+0.254829592)*t*Math.exp(-x*x));
+}
+function emgVal(t,rt,sg,tau){
+  if(tau<=0)return Math.exp(-0.5*((t-rt)/sg)**2);
+  const z=(t-rt)/sg,k=sg/tau;
+  return 0.5*k*Math.exp(0.5*k*k-z*k)*(1+erfA((z-k)/Math.SQRT2));
+}
+function peakY(t,p){
+  const sg=(p.width||0.5)/2.355;
+  const As=p.As??1.0;
+  if((p.shape||'none')==='none') return Math.exp(-0.5*((t-(p.rt||p.tR||0))/sg)**2)*p.height;
+  const rt=p.rt||p.tR||0;
+  const tau=AsToTau(As,sg);
+  if(p.shape==='tailing'){
+    const mx=emgVal(rt,rt,sg,tau)||1;
+    return(emgVal(t,rt,sg,tau)/mx)*p.height;
+  } else {
+    const mx=emgVal(rt,rt,sg,tau)||1;
+    return(emgVal(2*rt-t,rt,sg,tau)/mx)*p.height;
+  }
+}
+function buildSig(plist,xMin,xMax,noise,drft,ppm){
+  const n=Math.max(10,Math.round((xMax-xMin)*ppm));
+  const step=(xMax-xMin)/n;
+  const maxH=plist.length?Math.max(...plist.map(p=>p.height||3000),1):1;
+  const out=[];
+  for(let i=0;i<=n;i++){
+    const t=xMin+i*step;
+    let y=0;for(const p of plist)y+=peakY(t,p);
+    y+=(drft/100)*maxH*(t-xMin)/(xMax-xMin||1);
+    if(noise>0)y+=(Math.random()-0.5)*2*(noise/100)*maxH;
+    out.push({t,y:Math.max(0,y)});
+  }
+  return out;
+}
+
+// ════════════════════════════════════════════════════════════════
+// SHARED DRAW (for offscreen/export)
+// ════════════════════════════════════════════════════════════════
+function draw(canvas,data,plist,cfg,extra){
+  // Generic draw on any canvas using same logic as drawLC
+  const ctx=canvas.getContext('2d');
+  const W=canvas.width,H=canvas.height;
+  const P={t:50,r:50,b:60,l:75};
+  const pw=W-P.l-P.r,ph=H-P.t-P.b;
+  ctx.clearRect(0,0,W,H);ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);
+  const x0=0,x1=data.length?data[data.length-1].t:20;
+  const autoMaxY=data.length?Math.max(...data.map(d=>d.y),1)*1.12:1;
+  const maxY=autoMaxY;
+  const tx=t=>P.l+(t-x0)/(x1-x0)*pw;
+  const ty=y=>P.t+ph-(y/maxY)*ph;
+  ctx.font='9px "IBM Plex Mono"';
+  for(let i=0;i<=5;i++){const y=P.t+ph*i/5;ctx.strokeStyle='#e5e7eb';ctx.lineWidth=0.5;ctx.beginPath();ctx.moveTo(P.l,y);ctx.lineTo(P.l+pw,y);ctx.stroke();const v=maxY*(1-i/5);ctx.fillStyle='#5a6478';ctx.textAlign='right';ctx.fillText(v>=1000?(v/1000).toFixed(1)+'k':v.toFixed(0),P.l-5,y+3);}
+  for(let i=0;i<=10;i++){const t=x0+(x1-x0)*i/10,x=tx(t);ctx.strokeStyle='#e5e7eb';ctx.lineWidth=0.5;ctx.beginPath();ctx.moveTo(x,P.t);ctx.lineTo(x,P.t+ph);ctx.stroke();ctx.fillStyle='#5a6478';ctx.textAlign='center';ctx.fillText(t.toFixed(1),x,P.t+ph+15);}
+  ctx.strokeStyle='#2a3550';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(P.l,P.t);ctx.lineTo(P.l,P.t+ph);ctx.lineTo(P.l+pw,P.t+ph);ctx.stroke();
+  if(data.length){
+    ctx.beginPath();ctx.moveTo(tx(data[0].t),ty(0));for(const d of data)ctx.lineTo(tx(d.t),ty(d.y));ctx.lineTo(tx(data[data.length-1].t),ty(0));ctx.closePath();ctx.fillStyle='rgba(37,99,235,0.06)';ctx.fill();
+    ctx.beginPath();ctx.moveTo(tx(data[0].t),ty(data[0].y));for(let j=1;j<data.length;j++)ctx.lineTo(tx(data[j].t),ty(data[j].y));ctx.strokeStyle='#1d4ed8';ctx.lineWidth=1.8;ctx.stroke();
+  }
+  plist.forEach((p,idx)=>{
+    const rt=p.rt||p.tR||0;if(!rt||rt<x0||rt>x1)return;
+    const px2=tx(rt),py2=ty(p.height*0.998);
+    ctx.fillStyle=p.color||'#1d4ed8';ctx.font='bold 10px "IBM Plex Sans"';ctx.textAlign='center';
+    ctx.fillText(p.name||`P${idx+1}`,px2,py2-12);
+    ctx.strokeStyle=p.color||'#1d4ed8';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(px2,py2-7);ctx.lineTo(px2,py2);ctx.stroke();
+  });
+  ctx.fillStyle='#1a2744';ctx.font='bold 13px "IBM Plex Sans"';ctx.textAlign='center';ctx.setLineDash([]);
+  ctx.fillText(cfg.title||'Chromatogram',W/2,30);
+  ctx.fillStyle='#2a3550';ctx.font='11px "IBM Plex Sans"';ctx.textAlign='center';
+  ctx.fillText(cfg.xL||'Retention Time (min)',P.l+pw/2,H-10);
+  ctx.save();ctx.translate(14,P.t+ph/2);ctx.rotate(-Math.PI/2);ctx.fillText(cfg.yL||'Intensity (a.u.)',0,0);ctx.restore();
+}
+
+// ════════════════════════════════════════════════════════════════
+// QUANTITATIVE ANALYSIS (CALIBRATION)
+// ════════════════════════════════════════════════════════════════
+// Cal peaks are independent from MO and Customize peaks
+function addCalPeak(d={}){
+  if(calPeaks.length>=5){notify('Max 5 peaks','warn');return;}
+  const i=calPeaks.length;
+  calPeaks.push({
+    id:Date.now()+Math.random(),
+    rt:d.rt||(3+i*4),width:d.width||0.5,height:d.height||3000,
+    shape:d.shape||'none',As:d.As||1.0,
+    color:d.color||CLR[i%CLR.length],
+    calScale:i===0
+  });
+  renderCalPeaks();
+}
+function removeCalPeak(id){
+  calPeaks=calPeaks.filter(p=>p.id!==id);
+  renderCalPeaks();
+}
+function setCP(id,field,val){const p=calPeaks.find(x=>x.id===id);if(p)p[field]=val;}
+function togCPBody(uid){document.getElementById('cpb'+uid)?.classList.toggle('open');}
+function togCalScale(id){
+  const p=calPeaks.find(x=>x.id===id);if(!p)return;
+  p.calScale=!p.calScale;
+  renderCalPeaks();
+}
+
+function renderCalPeaks(){
+  const list=document.getElementById('pkList-c');if(!list)return;
+  list.innerHTML='';
+  calPeaks.forEach((p,i)=>{
+    const uid=p.id;
+    const card=document.createElement('div');card.className='pkcard';
+    card.innerHTML=`
+      <div class="pkhead" onclick="togCPBody(${uid})">
+        <div class="pklbl">
+          <span class="pkdot" style="background:${p.color}"></span>
+          <span style="font-size:10px;font-family:var(--mono)">${p.name||`Peak ${i+1}`}</span> — ${p.rt.toFixed(2)} min
+          <span class="scale-badge ${p.calScale?'on':''}" onclick="event.stopPropagation();togCalScale(${uid})" title="Toggle calibration scaling">◆ SCALE</span>
+        </div>
+        <button class="pkrm" onclick="event.stopPropagation();removeCalPeak(${uid})">✕</button>
+      </div>
+      <div class="pkbody" id="cpb${uid}">
+        <div class="f"><label>Name</label><input type="text" value="${p.name||''}" placeholder="Peak ${i+1}"
+          oninput="setCP(${uid},'name',this.value);renderCalPeaks()"></div>
+        <div class="r3">
+          <div class="f"><label>RT (min)</label><input type="number" value="${p.rt}" step="0.01" min="0" onchange="setCP(${uid},'rt',+this.value);renderCalPeaks()"></div>
+          <div class="f"><label>FWHM (min)</label><input type="number" value="${p.width}" step="0.01" min="0.01" onchange="setCP(${uid},'width',+this.value)"></div>
+          <div class="f"><label>Height</label><input type="number" value="${p.height}" step="50" min="10" onchange="setCP(${uid},'height',+this.value)"></div>
+        </div>
+        <div class="f"><label>Shape</label>
+          <select onchange="setCP(${uid},'shape',this.value);document.getElementById('cpar${uid}').style.display=this.value==='none'?'none':''">
+            <option value="none" ${p.shape==='none'?'selected':''}>Pure Gaussian</option>
+            <option value="tailing" ${p.shape==='tailing'?'selected':''}>Tailing (As>1)</option>
+            <option value="fronting" ${p.shape==='fronting'?'selected':''}>Fronting (As<1)</option>
+          </select>
+        </div>
+        <div id="cpar${uid}" style="${p.shape==='none'?'display:none':''}">
+          <label>As: <span id="cpav${uid}">${p.As.toFixed(2)}</span></label>
+          <input type="range" min="0.20" max="4.00" step="0.05" value="${p.As}"
+            oninput="document.getElementById('cpav${uid}').textContent=(+this.value).toFixed(2);setCP(${uid},'As',+this.value)">
+        </div>
+        <div class="f"><label>Color</label><div class="crow">
+          ${CLR.slice(0,10).map(c=>`<div class="csw ${c===p.color?'sel':''}" style="background:${c}"
+            onclick="setCP(${uid},'color','${c}');renderCalPeaks()"></div>`).join('')}
+        </div></div>
+      </div>`;
+    list.appendChild(card);
+  });
+  document.getElementById('qaPeakD').textContent=calPeaks.length;
+  document.getElementById('addPkC').style.opacity=calPeaks.length>=5?'0.4':'1';
+}
+
+function addCalPt(c='',u='mg/L'){calPts.push({conc:c,unit:u});renderCalTable();}
+function renderCalTable(){
+  const tb=document.getElementById('calBody');if(!tb)return;tb.innerHTML='';
+  calPts.forEach((cp,i)=>{
+    tb.innerHTML+=`<tr>
+      <td>${i+1}</td>
+      <td><input type="number" value="${cp.conc}" step="0.1" style="width:80px" onchange="calPts[${i}].conc=+this.value"></td>
+      <td><input type="text" value="${cp.unit}" style="width:54px" onchange="calPts[${i}].unit=this.value"></td>
+      <td><button onclick="calPts.splice(${i},1);renderCalTable()">✕</button></td>
+    </tr>`;
+  });
+}
+
+function genCal(){
+  if(!calPeaks.length){notify('Add peaks in Quantitative Analysis tab!','warn');return;}
+  if(!calPts.length){notify('Add calibration points!','warn');return;}
+  const scalePeaks=calPeaks.filter(p=>p.calScale);
+  if(!scalePeaks.length){notify('Toggle ◆ SCALE on at least one peak!','warn');return;}
+  const xMin=+document.getElementById('cxMin').value||0;
+  const xMax=+document.getElementById('cxMax').value||20;
+  const xL=document.getElementById('cxLabel').value;
+  const yL=document.getElementById('cyLabel').value;
+  const noise=document.getElementById('qaNoiseOn').checked?+document.getElementById('qaNoise').value:0;
+  const drift=+document.getElementById('qaDrift').value||0;
+  const ppm=+document.getElementById('qaPpm').value||24;
+  const maxH=+document.getElementById('calMaxH').value||5000;
+  const rel=document.getElementById('calRel').value;
+  const maxC=Math.max(...calPts.map(c=>+c.conc),1);
+  const doRep=document.getElementById('calRepOn').checked;
+  const nRep=doRep?+document.getElementById('calRepN').value:1;
+  const off=document.createElement('canvas');off.width=960;off.height=540;
+  calRes=[];
+
+  calPts.forEach((cp,ci)=>{
+    const c=+cp.conc;
+    let f=rel==='linear'?c/maxC:rel==='quad'?(c/maxC)**2:Math.log1p(c)/Math.log1p(maxC);
+    const basePeaks=calPeaks.map(p=>p.calScale?{...p,height:maxH*f}:{...p});
+
+    for(let r=0;r<nRep;r++){
+      const mp=nRep>1?randVariant(basePeaks,10,10,15):basePeaks;
+      const data=buildSig(mp,xMin,xMax,noise,drift,ppm);
+      const repSuffix=nRep>1?`_R${r+1}`:'';
+      // OniChrom-style naming for QA
+      const cStr=String(c).replace('.','p');
+      const uStr=(cp.unit||'').replace(/[^a-zA-Z0-9]/g,'');
+      const name=`QA_${String(ci+1).padStart(2,'0')}_${cStr}${uStr}_PPM${Math.round(ppm)}${repSuffix}`;
+      const label=nRep>1?`${c} ${cp.unit} — Rep ${r+1}`:`${c} ${cp.unit}`;
+      const cfg={title:`Quantitative — ${c} ${cp.unit}${nRep>1?` (Rep ${r+1})`:''}`,xL,yL};
+      draw(off,data,mp,cfg);
+      calRes.push({name,label,png:off.toDataURL('image/png'),csv:toCSV(data),data,peaks:mp,cfg});
+    }
+  });
+
+  showCalList('calList',calRes,calRes.length-1);
+  document.getElementById('calBox').style.display='';
+  prvwCal(calRes,calRes.length-1);
+  notify(`${calRes.length} QA chromatograms — ${scalePeaks.length} scaling peak(s)`);
+}
+
+function randVariant(plist,rtPct=10,widthPct=10,areaPct=15){
+  return plist.map(p=>({
+    ...p,
+    rt:(p.rt||p.tR||0)*(1+(Math.random()-0.5)*2*(rtPct/100)),
+    width:Math.max(0.1,(p.width||0.5)*(1+(Math.random()-0.5)*2*(widthPct/100))),
+    height:(p.height||3000)*(1+(Math.random()-0.5)*2*(areaPct/100))
+  }));
+}
+
+function showCalList(lid,res,activeIdx){
+  const el=document.getElementById(lid);if(!el)return;el.innerHTML='';
+  res.forEach((r,i)=>{
+    const item=document.createElement('div');
+    item.className='ri'+(i===activeIdx?' act':'');
+    item.innerHTML=`<div class="sdot"></div><span>${r.label||r.name}</span>`;
+    item.onclick=()=>{
+      el.querySelectorAll('.ri').forEach(x=>x.classList.remove('act'));
+      item.classList.add('act');prvwCal(res,i);
+    };
+    el.appendChild(item);
+  });
+}
+function prvwCal(res,idx){
+  const r=res[idx];if(!r)return;
+  qaLastData=r.data;qaLastPeaks=r.peaks;qaLastCfg=r.cfg||{};
+  qaDraw(r.data,r.peaks,r.cfg||{});
+}
+
+// QA annotation toggles
+function qaTogAnn(k){
+  qaAnnState[k]=!qaAnnState[k];
+  document.getElementById('qaann-'+k)?.classList.toggle('on',qaAnnState[k]);
+  qaRedraw();
+}
+function qaRedraw(){
+  if(!qaLastData.length)return;
+  qaDraw(qaLastData,qaLastPeaks,qaLastCfg);
+}
+function qaResetWindow(){
+  document.getElementById('qawxMin').value='';
+  document.getElementById('qawxMax').value='';
+  document.getElementById('qawyMax').value='';
+  qaRedraw();
+}
+
+function qaDraw(data,plist,cfg){
+  const canvas=document.getElementById('cv3');if(!canvas)return;
+  const ctx=canvas.getContext('2d');
+  const W=canvas.width,H=canvas.height;
+  const Pad={t:52,r:32,b:62,l:82};
+  const pw=W-Pad.l-Pad.r,ph=H-Pad.t-Pad.b;
+  ctx.clearRect(0,0,W,H);ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);
+
+  const xMinV=document.getElementById('qawxMin').value;
+  const xMaxV=document.getElementById('qawxMax').value;
+  const yMaxV=document.getElementById('qawyMax').value;
+  const autoMaxY=data.length?Math.max(...data.map(d=>d.y),1)*1.1:1;
+  const maxY=yMaxV!==''?+yMaxV:autoMaxY;
+  const fullX0=data[0]?.t||0,fullX1=data[data.length-1]?.t||20;
+  const x0=xMinV!==''?+xMinV:fullX0;
+  const x1=xMaxV!==''?+xMaxV:fullX1;
+  const tx=t=>Pad.l+(t-x0)/(x1-x0)*pw;
+  const ty=y=>Pad.t+ph-(y/maxY)*ph;
+
+  ctx.font='10px "IBM Plex Mono"';
+  for(let i=0;i<=5;i++){const y=Pad.t+ph*i/5;ctx.strokeStyle='#e5e7eb';ctx.lineWidth=0.5;ctx.beginPath();ctx.moveTo(Pad.l,y);ctx.lineTo(Pad.l+pw,y);ctx.stroke();const v=maxY*(1-i/5);ctx.fillStyle='#5a6478';ctx.textAlign='right';ctx.fillText(v>=1000?(v/1000).toFixed(1)+'k':v.toFixed(0),Pad.l-6,y+4);}
+  for(let i=0;i<=10;i++){const t=x0+(x1-x0)*i/10,x=tx(t);ctx.strokeStyle='#e5e7eb';ctx.lineWidth=0.5;ctx.beginPath();ctx.moveTo(x,Pad.t);ctx.lineTo(x,Pad.t+ph);ctx.stroke();ctx.fillStyle='#5a6478';ctx.textAlign='center';ctx.fillText(t.toFixed(1),x,Pad.t+ph+16);}
+  ctx.strokeStyle='#2a3550';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(Pad.l,Pad.t);ctx.lineTo(Pad.l,Pad.t+ph);ctx.lineTo(Pad.l+pw,Pad.t+ph);ctx.stroke();
+
+  if(data.length){
+    ctx.beginPath();ctx.moveTo(tx(data[0].t),ty(0));for(const d of data)ctx.lineTo(tx(d.t),ty(d.y));ctx.lineTo(tx(data[data.length-1].t),ty(0));ctx.closePath();ctx.fillStyle='rgba(37,99,235,0.07)';ctx.fill();
+    ctx.beginPath();ctx.moveTo(tx(data[0].t),ty(data[0].y));for(let i=1;i<data.length;i++)ctx.lineTo(tx(data[i].t),ty(data[i].y));ctx.strokeStyle='#1d4ed8';ctx.lineWidth=1.8;ctx.stroke();
+  }
+
+  plist.forEach((p,i)=>{
+    const rt=p.rt||p.tR||0;if(!rt||rt<x0||rt>x1)return;
+    const px2=tx(rt),py2=ty(p.height*.995);
+    ctx.fillStyle=p.color||'#1d4ed8';ctx.font='bold 11px "IBM Plex Sans"';ctx.textAlign='center';
+    ctx.fillText(`P${i+1}`,px2,py2-12);
+    ctx.strokeStyle=p.color||'#1d4ed8';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(px2,py2-7);ctx.lineTo(px2,py2);ctx.stroke();
+    if(qaAnnState.tr){ctx.fillStyle='#2a3550';ctx.font='9px "IBM Plex Mono"';ctx.fillText(`tR=${rt.toFixed(3)}`,px2,py2-24);}
+    if(qaAnnState.ht){ctx.fillStyle='#5a6478';ctx.font='8px "IBM Plex Mono"';ctx.fillText(`h=${p.height>=1000?(p.height/1000).toFixed(1)+'k':p.height.toFixed(0)}`,px2,py2-36);}
+    if(qaAnnState.fwhm){
+      const hh=p.height/2,hw=(p.width||0.5)/2,yfwhm=ty(hh);
+      ctx.strokeStyle='#f59e0b';ctx.lineWidth=1.2;ctx.setLineDash([3,2]);
+      ctx.beginPath();ctx.moveTo(tx(rt-hw),yfwhm);ctx.lineTo(tx(rt+hw),yfwhm);ctx.stroke();
+      ctx.setLineDash([]);ctx.fillStyle='#f59e0b';ctx.font='9px "IBM Plex Mono"';
+      ctx.fillText(`FWHM=${(p.width||0.5).toFixed(3)}`,px2,yfwhm-5);
+    }
+    if(qaAnnState.wb){
+      const h10=p.height*0.1,hw10=(p.width||0.5)*2,ywb=ty(h10);
+      ctx.strokeStyle='#22c55e';ctx.lineWidth=1.2;ctx.setLineDash([3,2]);
+      ctx.beginPath();ctx.moveTo(tx(rt-hw10),ywb);ctx.lineTo(tx(rt+hw10),ywb);ctx.stroke();
+      ctx.setLineDash([]);ctx.fillStyle='#22c55e';ctx.font='9px "IBM Plex Mono"';
+      ctx.fillText(`W(4σ)=${(p.width||0.5*4).toFixed(3)}`,px2,ywb-5);
+    }
+    if(qaAnnState.area){
+      ctx.fillStyle='#a855f7';ctx.font='9px "IBM Plex Mono"';
+      const areaEst=p.height*(p.width||0.5)*Math.sqrt(2*Math.PI)/2.355;
+      ctx.fillText(`A≈${areaEst>=1000?(areaEst/1000).toFixed(1)+'k':areaEst.toFixed(0)}`,px2,ty(p.height*0.75)-3);
+    }
+  });
+
+  ctx.fillStyle='#1a2744';ctx.font='bold 14px "IBM Plex Sans"';ctx.textAlign='center';ctx.setLineDash([]);
+  ctx.fillText(cfg.title||'Quantitative Analysis',W/2,32);
+  ctx.fillStyle='#2a3550';ctx.font='11px "IBM Plex Sans"';ctx.textAlign='center';
+  ctx.fillText(cfg.xL||'Retention Time (min)',Pad.l+pw/2,H-10);
+  ctx.save();ctx.translate(14,Pad.t+ph/2);ctx.rotate(-Math.PI/2);ctx.fillText(cfg.yL||'Intensity (a.u.)',0,0);ctx.restore();
+}
+
+// ════════════════════════════════════════════════════════════════
+// DOWNLOAD UTILS
+// ════════════════════════════════════════════════════════════════
+function toCSV(d){return'Time_min;Intensity\n'+d.map(r=>`${r.t.toFixed(4)};${r.y.toFixed(2)}`).join('\n');}
+async function dlZip(res,prefix){
+  if(!res.length){notify('Generate first!','warn');return;}
+  notify('Building ZIP…');
+  const zip=new JSZip();
+  for(const r of res){zip.file(r.name+'.png',r.png.split(',')[1],{base64:true});zip.file(r.name+'.csv',r.csv);}
+  const blob=await zip.generateAsync({type:'blob'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=prefix+'_batch.zip';a.click();
+  notify(`ZIP downloaded: ${res.length} files`);
+}
+async function dlRes(res,fmt){
+  if(!res.length){notify('Generate first!','warn');return;}
+  for(const r of res){
+    if(fmt==='png'||fmt==='both'){const a=document.createElement('a');a.href=r.png;a.download=r.name+'.png';a.click();await sl(130);}
+    if(fmt==='csv'||fmt==='both'){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([r.csv],{type:'text/plain'}));a.download=r.name+'.csv';a.click();await sl(130);}
+  }
+  notify(`${res.length} file(s) downloaded!`);
+}
+function sl(ms){return new Promise(r=>setTimeout(r,ms));}
+function notify(msg,type='ok'){
+  const el=document.getElementById('notif');
+  el.textContent=msg;
+  el.className=type==='warn'?'show warn':type==='danger'?'show danger':'show';
+  setTimeout(()=>el.className='',2800);
+}
+
+// ════════════════════════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════════════════════════
+window.addEventListener('load',()=>{
+  // Default MO compounds
+  addCompound({name:'Compound A (apolar)',pol:45});
+  addCompound({name:'Compound B',pol:180});
+  addCompound({name:'Compound C',pol:420});
+  addCompound({name:'Compound D (polar)',pol:750});
+  
+  // Default Customize peaks
+  addManualPeak({rt:5,width:0.5,height:4000,shape:'none',As:1.0});
+  addManualPeak({rt:10,width:0.7,height:2500,shape:'tailing',As:1.8});
+
+  // Default QA peaks
+  addCalPeak({rt:4,width:0.4,height:3000,shape:'none',As:1.0});
+  addCalPeak({rt:8,width:0.5,height:3000,shape:'none',As:1.0});
+  // Default calibration points
+  addCalPt(10,'mg/L');addCalPt(25,'mg/L');addCalPt(50,'mg/L');
+  addCalPt(100,'mg/L');addCalPt(200,'mg/L');
+  
+  updateInjWarning();
+  updateColWarnings();
+  updateSysWarning();
+  updateMPDisplay();
+  updateFlowWarning();
+  
+  // Generate default chromatograms
+  genLC();
+  genSingle();
+
+  // Replicate toggle for QA
+  document.getElementById('calRepOn').addEventListener('change',e=>{
+    document.getElementById('calRepOpts').style.display=e.target.checked?'':'none';
+  });
+
+  // Sync ppm display for Customize tab
+  document.getElementById('ppm').addEventListener('input',e=>{
+    document.getElementById('ppmD').textContent=e.target.value;
+  });
+  document.getElementById('qaPpm').addEventListener('input',e=>{
+    document.getElementById('qaPpmD').textContent=e.target.value;
+  });
+});
+</script>
+</body>
+</html>
