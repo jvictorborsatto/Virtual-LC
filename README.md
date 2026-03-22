@@ -40,7 +40,7 @@ Simulates chromatographic runs based on instrument and column parameters. Suppor
 - Inner diameter: 4.6 / 2.1 / 1.0 / <0.5 mm
 - Particle type: Fully Porous (FPP) or Superficially Porous (SPP)
 - Particle size: 1.7 / 3 / 5 / 10 µm
-- Column length and dead time
+- System volume and dead time
 
 **Detector Setup:**
 - Data points per minute (6–48 pts/min)
