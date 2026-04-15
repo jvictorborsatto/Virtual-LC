@@ -277,13 +277,28 @@ input[type=checkbox]{accent-color:var(--accent);width:13px;height:13px;cursor:po
   <div class="sec">
     <div class="st">Column</div>
     <!-- Stationary phase -->
-    <div class="f">
-      <label>Stationary phase</label>
-      <select id="colPhase" onchange="updateColWarnings()">
-        <option value="C18">C18 (most retentive)</option>
-        <option value="C8">C8</option>
-        <option value="C4">C4 (least retentive)</option>
-      </select>
+    <div id="pb-colPhase" class="param-block">
+      <div class="param-header">
+        <span class="param-title">Stationary Phase</span>
+        <div class="cv-toggle">
+          <button class="cv-btn on" onclick="setCVmode('colPhase','const',this)">CONST</button>
+          <button class="cv-btn" onclick="setCVmode('colPhase','var',this)">VAR</button>
+        </div>
+      </div>
+      <div class="param-const" id="pc-colPhase">
+        <select id="colPhase" onchange="updateColWarnings()">
+          <option value="C18">C18 (most retentive)</option>
+          <option value="C8">C8</option>
+          <option value="C4">C4 (least retentive)</option>
+        </select>
+      </div>
+      <div class="param-var" id="pv-colPhase">
+        <div class="f" style="margin-top:4px">
+          <div class="cbrow"><input type="checkbox" id="colPhase_vC18" value="C18" checked><label for="colPhase_vC18" style="margin:0">C18 (most retentive)</label></div>
+          <div class="cbrow"><input type="checkbox" id="colPhase_vC8"  value="C8"  checked><label for="colPhase_vC8"  style="margin:0">C8</label></div>
+          <div class="cbrow"><input type="checkbox" id="colPhase_vC4"  value="C4"><label for="colPhase_vC4"  style="margin:0">C4 (least retentive)</label></div>
+        </div>
+      </div>
     </div>
     <!-- Column ID -->
     <div id="pb-colid" class="param-block">
@@ -365,17 +380,33 @@ input[type=checkbox]{accent-color:var(--accent);width:13px;height:13px;cursor:po
   <!-- SYSTEM PARAMETERS -->
   <div class="sec">
     <div class="st">System Parameters</div>
-    <div class="r2">
-      <div class="f">
-        <label>Extra-col. vol. (µL)</label>
-        <input type="number" id="sysVol" value="10" step="1" min="1" max="500" oninput="updateSysWarning()">
+    <div id="pb-sysVol" class="param-block">
+      <div class="param-header">
+        <span class="param-title">Extra-col. vol. (µL)</span>
+        <div class="cv-toggle">
+          <button class="cv-btn on" onclick="setCVmode('sysVol','const',this)">CONST</button>
+          <button class="cv-btn" onclick="setCVmode('sysVol','var',this)">VAR</button>
+        </div>
+      </div>
+      <div class="param-const" id="pc-sysVol">
+        <input type="number" id="sysVol" value="10" step="1" min="1" max="500" oninput="updateSysWarning();autoDeadTime()">
         <div class="itx" style="margin-top:2px">Tailing ↑ at low flow</div>
       </div>
-      <div class="f">
-        <label>Dead time t₀ (min)</label>
-        <input type="number" id="deadTime" value="0.3" step="0.05" min="0.01" max="5">
-        <div class="itx" style="margin-top:2px">Void volume delay</div>
+      <div class="param-var" id="pv-sysVol">
+        <div class="var-row">
+          <div><label>Min µL</label><input type="number" id="sysVol_min" value="5"  step="1" min="1" max="500" oninput="updateSysWarning()"></div>
+          <div><label>Max µL</label><input type="number" id="sysVol_max" value="50" step="1" min="1" max="500" oninput="updateSysWarning()"></div>
+          <div><label>Step µL</label><input type="number" id="sysVol_step" value="15" step="1" min="1"></div>
+        </div>
+        <div class="itx" style="margin-top:2px">Dead time t₀ calculado automaticamente por valor</div>
       </div>
+    </div>
+    <!-- Dead time: readonly, auto-calculated from sysVol (const mode only) -->
+    <div class="f" id="deadTimeRow">
+      <label>Dead time t₀ (min) <span style="color:var(--text3);font-size:9px">— auto</span></label>
+      <input type="number" id="deadTime" value="0.3" step="0.05" min="0.01" max="5" readonly
+        style="background:var(--surface3);color:var(--text3);cursor:default">
+      <div class="itx" style="margin-top:2px">Calculado: sysVol / (flow × 1000)</div>
     </div>
     <div id="sys-warn" class="itx"></div>
   </div>
@@ -461,14 +492,30 @@ input[type=checkbox]{accent-color:var(--accent);width:13px;height:13px;cursor:po
     </div>
 
     <!-- SOLVENT (always visible) -->
-    <div class="f">
-      <label>Organic solvent (B)</label>
-      <select id="orgSolvG">
-        <option value="methanol" selected>Methanol</option>
-        <option value="acetonitrile">Acetonitrile (stronger)</option>
-        <option value="ethanol">Ethanol</option>
-        <option value="isopropanol">Isopropanol (strongest)</option>
-      </select>
+    <div id="pb-orgSolvG" class="param-block">
+      <div class="param-header">
+        <span class="param-title">Organic Solvent (B)</span>
+        <div class="cv-toggle">
+          <button class="cv-btn on" onclick="setCVmode('orgSolvG','const',this)">CONST</button>
+          <button class="cv-btn" onclick="setCVmode('orgSolvG','var',this)">VAR</button>
+        </div>
+      </div>
+      <div class="param-const" id="pc-orgSolvG">
+        <select id="orgSolvG">
+          <option value="methanol" selected>Methanol</option>
+          <option value="acetonitrile">Acetonitrile (stronger)</option>
+          <option value="ethanol">Ethanol</option>
+          <option value="isopropanol">Isopropanol (strongest)</option>
+        </select>
+      </div>
+      <div class="param-var" id="pv-orgSolvG">
+        <div class="f" style="margin-top:4px">
+          <div class="cbrow"><input type="checkbox" id="orgSolvG_vMeOH" value="methanol"     checked><label for="orgSolvG_vMeOH" style="margin:0">Methanol</label></div>
+          <div class="cbrow"><input type="checkbox" id="orgSolvG_vACN"  value="acetonitrile" checked><label for="orgSolvG_vACN"  style="margin:0">Acetonitrile (stronger)</label></div>
+          <div class="cbrow"><input type="checkbox" id="orgSolvG_vEtOH" value="ethanol"><label for="orgSolvG_vEtOH" style="margin:0">Ethanol</label></div>
+          <div class="cbrow"><input type="checkbox" id="orgSolvG_viPrOH" value="isopropanol"><label for="orgSolvG_viPrOH" style="margin:0">Isopropanol (strongest)</label></div>
+        </div>
+      </div>
     </div>
 
     <!-- FLOW -->
@@ -948,6 +995,20 @@ let currentMainTab='mo';
 // cv/variable tracking
 const cvModes={}; // id -> 'const'|'var'
 
+// Auto-calculate dead time from sysVol + flow (const mode only, for display)
+function autoDeadTime(){
+  const sv=+document.getElementById('sysVol').value||10;
+  const fl=+document.getElementById('flow').value||0.4;
+  const t0=(sv/(fl*1000));
+  const el=document.getElementById('deadTime');
+  if(el) el.value=t0.toFixed(3);
+}
+// Hide deadTimeRow when sysVol is in VAR mode (t0 calculated per-run)
+function updateDeadTimeRowVisibility(){
+  const row=document.getElementById('deadTimeRow');
+  if(row) row.style.display=isVar('sysVol')?'none':'';
+}
+
 // ════════════════════════════════════════════════════════════════
 // FACTORS (internal simulation parameters)
 // ════════════════════════════════════════════════════════════════
@@ -1007,6 +1068,7 @@ function setCVmode(id, mode, btn){
     pb.querySelectorAll('.cv-btn').forEach(b=>b.classList.remove('on'));
     btn.classList.add('on');
   }
+  if(id==='sysVol') updateDeadTimeRowVisibility();
 }
 
 function isVar(id){return cvModes[id]==='var';}
@@ -1222,7 +1284,7 @@ function calcRetentionFactor(cpd, params){
   // Polarity → k_base (unified model for both isocratic and gradient)
   // Higher polarity = lower k = elutes earlier
   const polEff=Math.max(1,cpd.pol);
-  const base_k=F.psaA_grad*Math.pow(polEff,-F.psaB_grad);
+  const base_k=F.psaA_grad*Math.pow(polEff,-F.psaB_grad)*10; // ×10: apolar (pol≈0) elutes much later than polar
 
   const phaseFactor={C18:1.0,C8:0.75,C4:0.55}[params.phase]||1.0;
   const tempFactor=Math.max(0.05,1-(params.temp-25)*F.tempK);
@@ -1476,35 +1538,62 @@ function genLC(){
     {cbId:'psize_v17',val:1.7},{cbId:'psize_v3',val:3},
     {cbId:'psize_v5',val:5},{cbId:'psize_v10',val:10}
   ]});
+  const colPhases=getParamValues('colPhase','colPhase',{choices:[
+    {cbId:'colPhase_vC18',val:'C18'},{cbId:'colPhase_vC8',val:'C8'},{cbId:'colPhase_vC4',val:'C4'}
+  ]});
+  const sysVols=getParamValues('sysVol','sysVol',{min:'sysVol_min',max:'sysVol_max',step:'sysVol_step'});
+  const orgSolvGs=getParamValues('orgSolvG','orgSolvG',{choices:[
+    {cbId:'orgSolvG_vMeOH',val:'methanol'},{cbId:'orgSolvG_vACN',val:'acetonitrile'},
+    {cbId:'orgSolvG_vEtOH',val:'ethanol'},{cbId:'orgSolvG_viPrOH',val:'isopropanol'}
+  ]});
 
   // Mobile phase params — unified (deltaB=0 = isocratic, deltaB>0 = gradient)
   const bInits=getParamValues('binit','binitN',{min:'binit_min',max:'binit_max',step:'binit_step'});
   const deltaBs=getParamValues('deltab','deltabN',{min:'deltab_min',max:'deltab_max',step:'deltab_step'});
   const gradTimes=getParamValues('gttime','gttime',{min:'gttime_min',max:'gttime_max',step:'gttime_step'});
-  const orgSolvG=document.getElementById('orgSolvG').value;
+  const orgSolvG=document.getElementById('orgSolvG').value; // fallback const mode
 
-  // Build parameter combinations using the "diagonal" approach for variables
-  const varSets=[];
-  if(flows.length>1) varSets.push(flows);
-  if(temps.length>1) varSets.push(temps);
-  if(injvols.length>1) varSets.push(injvols);
-  if(ppms.length>1) varSets.push(ppms);
-  if(colIds.length>1) varSets.push(colIds);
-  if(ptypes.length>1) varSets.push(ptypes);
-  if(psizes.length>1) varSets.push(psizes);
-  if(bInits.length>1) varSets.push(bInits);
-  if(deltaBs.length>1) varSets.push(deltaBs);
-  if(gradTimes.length>1) varSets.push(gradTimes);
+  // ── FULL FACTORIAL DESIGN (max 3 variables) ──────────────────
+  const varMap=[
+    {key:'flow',   arr:flows},
+    {key:'temp',   arr:temps},
+    {key:'injvol', arr:injvols},
+    {key:'ppm',    arr:ppms},
+    {key:'colId',  arr:colIds},
+    {key:'ptype',  arr:ptypes},
+    {key:'psize',  arr:psizes},
+    {key:'phase',  arr:colPhases},
+    {key:'sysVol', arr:sysVols},
+    {key:'orgSolvG',arr:orgSolvGs},
+    {key:'bInit',  arr:bInits},
+    {key:'deltaB', arr:deltaBs},
+    {key:'gradTime',arr:gradTimes},
+  ];
 
-  // Sort variable sets by number of levels (descending) to combine largest together
-  varSets.sort((a,b)=>b.length-a.length);
+  // Separate variables (>1 level) from constants
+  const activeVars=varMap.filter(v=>v.arr.length>1);
+  const constVars =varMap.filter(v=>v.arr.length<=1);
 
-  let combos=[];
-  if(varSets.length===0){
-    combos.push({});
-  } else {
-    const maxLen=varSets[0].length;
-    for(let i=0;i<maxLen;i++) combos.push({idx:i});
+  // Enforce maximum of 3 variables
+  if(activeVars.length>3){
+    notify(`Full factorial: max 3 variables allowed (${activeVars.length} selected). Please reduce.`,'warn');
+    return;
+  }
+
+  // Build all combinations (cartesian product of active variable arrays)
+  let combos=[{}];
+  for(const v of activeVars){
+    const next=[];
+    for(const existing of combos){
+      for(const val of v.arr){
+        next.push({...existing,[v.key]:val});
+      }
+    }
+    combos=next;
+  }
+  // Fill in constant values for every combo
+  for(const combo of combos){
+    for(const v of constVars) combo[v.key]=v.arr[0];
   }
 
   function getAt(arr,i){return arr[Math.min(i,arr.length-1)];}
@@ -1514,31 +1603,32 @@ function genLC(){
   let totalRuns=0;
 
   combos.forEach((combo,ci)=>{
-    const i=combo.idx??ci;
-    const flow=getAt(flows,i);
-    const temp=getAt(temps,i);
-    const injVol=getAt(injvols,i);
-    const ppm=getAt(ppms,i);
-    const colId=getAt(colIds,i);
-    const ptype=getAt(ptypes,i);
-    const psize=getAt(psizes,i);
-    const phase=document.getElementById('colPhase').value;
-    const sysVol=+document.getElementById('sysVol').value||10;
-    const t0=+document.getElementById('deadTime').value||0.3;
+    const flow=combo.flow;
+    const temp=combo.temp;
+    const injVol=combo.injvol;
+    const ppm=combo.ppm;
+    const colId=combo.colId;
+    const ptype=combo.ptype;
+    const psize=combo.psize;
+    const phase=combo.phase;
+    const sysVol=combo.sysVol;
+    const curOrgSolvG=combo.orgSolvG;
     const acid=document.getElementById('acidOn').checked;
     const sampleOrgPct=+document.getElementById('sampleOrgPct').value||0;
+    // Dead time auto-calculated from sysVol and flow (sysVol in µL, flow in mL/min)
+    const t0=sysVol/(flow*1000);
 
     const colVm=Math.PI*(colId/2/10)**2*15*0.63;
-    const bInit=getAt(bInits,i);
-    const deltaB=getAt(deltaBs,i);
+    const bInit=combo.bInit;
+    const deltaB=combo.deltaB;
     const bFinal=Math.min(100,bInit+deltaB);
-    const gradTime=getAt(gradTimes,i);
+    const gradTime=combo.gradTime;
     const isGradient=deltaB>=0.5;
 
     let params={
       flow,temp,injVol,colId,ptype,psize,phase,sysVol,t0,acid,sampleOrgPct,
-      colVm,bInit,deltaB,bFinal,gradTime,orgSolvG,
-      mode:isGradient?'grad':'iso' // kept for buildGradientProfile/buildPressureProfile
+      colVm,bInit,deltaB,bFinal,gradTime,orgSolvG:curOrgSolvG,
+      mode:isGradient?'grad':'iso'
     };
 
     const N=calcPlates(params);
@@ -1598,6 +1688,9 @@ function genLC(){
     if(psizes.length>1) lbl+=` | ${psize}µm`;
     if(colIds.length>1) lbl+=` | ${colId}mm`;
     if(ptypes.length>1) lbl+=` | ${ptype.toUpperCase()}`;
+    if(colPhases.length>1) lbl+=` | ${phase}`;
+    if(sysVols.length>1) lbl+=` | ${sysVol}µL`;
+    if(orgSolvGs.length>1) lbl+=` | ${curOrgSolvG==='methanol'?'MeOH':curOrgSolvG==='acetonitrile'?'ACN':curOrgSolvG==='ethanol'?'EtOH':'iPrOH'}`;
     if(ppms.length>1) lbl+=` | ${ppm}pts/min`;
 
     const cfg={
@@ -2747,6 +2840,9 @@ window.addEventListener('load',()=>{
   updateSysWarning();
   updateMPDisplay();
   updateFlowWarning();
+  autoDeadTime();
+  // Keep dead time display in sync with flow changes
+  document.getElementById('flow').addEventListener('input', autoDeadTime);
   
   // Generate default chromatograms
   genLC();
