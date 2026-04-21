@@ -192,6 +192,5 @@ Files follow OniChrom-compatible naming:
 ---
 
 ## License
-
-This project is not licensed for redistribution or commercial use.  
+  
 © João Victor Basolli Borsatto · 2026
