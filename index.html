@@ -940,11 +940,11 @@ input[type=checkbox]{accent-color:var(--accent);width:13px;height:13px;cursor:po
       <div class="f"><label>PSA power-law exponent (b) — isocratic</label><input type="number" id="fPsaB" value="0.7797" step="0.01" min="0.3" max="2.0"></div>
     </div>
     <div class="modal-row">
-      <div class="f"><label>PSA prefactor (A) — gradient</label><input type="number" id="fPsaAg" value="1920" step="50" min="100" title="Gradient mode k0 prefactor. Higher = more retention in gradient."></div>
-      <div class="f"><label>PSA exponent (b) — gradient</label><input type="number" id="fPsaBg" value="0.816" step="0.01" min="0.3" max="2.0" title="Gradient mode PSA exponent. Higher = wider spread between compounds."></div>
+      <div class="f"><label>PSA prefactor (A) — gradient</label><input type="number" id="fPsaAg" value="180" step="10" min="10" title="Gradient mode k0 prefactor. Higher = more retention in gradient."></div>
+      <div class="f"><label>PSA exponent (b) — gradient</label><input type="number" id="fPsaBg" value="0.85" step="0.01" min="0.3" max="2.0" title="Gradient mode PSA exponent. Higher = wider spread between compounds."></div>
     </div>
     <div class="modal-row">
-      <div class="f"><label>LSS S coefficient (solvent strength)</label><input type="number" id="fSolvS" value="2.3" step="0.1" min="0.5" max="5" title="Log-linear solvent strength. Higher S = stronger %B effect on retention."></div>
+      <div class="f"><label>LSS S coeff. <span style="opacity:.4">legacy</span></label><input type="number" id="fSolvS" value="4.5" step="0.1" min="0.5" max="8" title="Legacy — not used in current model. Use S isocratic / S gradient instead." style="opacity:.5"></div>
       <div class="f"><label>Temperature k reduction (/°C)</label><input type="number" id="fTempK" value="0.008" step="0.001"></div>
     </div>
     <div class="modal-row">
@@ -958,6 +958,22 @@ input[type=checkbox]{accent-color:var(--accent);width:13px;height:13px;cursor:po
     <div class="modal-row">
       <div class="f"><label>SPP fronting amplification</label><input type="number" id="fSppFront" value="1.4" step="0.1" min="1"></div>
       <div class="f"><label>Pressure base (bar·min/mL at 3µm)</label><input type="number" id="fPresBase" value="120" step="10" min="10"></div>
+    </div>
+    <div class="modal-row">
+      <div class="f"><label>Polarity cubic curvature (α) <span style="opacity:.4">legacy</span></label><input type="number" id="fPolCubicAlpha" value="2.0" step="0.1" min="0" max="6" title="Legacy parameter — not used in current model."></div>
+      <div class="f"></div>
+    </div>
+    <div class="modal-row">
+      <div class="f"><label>k_max — C8 anchor (pol=0, 0%B)</label><input type="number" id="fKMax" value="724.9" step="10" min="10" max="5000" title="Retention factor of the most apolar compound (pol=0) at 0%B on C8. Anchor point: pol=0 elutes at end of 10-min gradient."></div>
+      <div class="f"><label>λ — polarity decay (ln scale)</label><input type="number" id="fPolLambda" value="6.908" step="0.1" min="1" max="12" title="Exponential decay rate: k = k_max × exp(-λ×pol/1000). 6.908 = ln(1000) means pol=1000 gives k=k_max/1000."></div>
+    </div>
+    <div class="modal-row">
+      <div class="f"><label>S isocratic (solvent strength)</label><input type="number" id="fSolvSIso" value="6.9" step="0.1" min="1" max="15" title="Isocratic S: k0 = k_base × exp(-S×phi). High value (6.9) ensures 100%B → k≈0 for all compounds."></div>
+      <div class="f"><label>S gradient (LSS steepness)</label><input type="number" id="fSolvSGrad" value="3.0" step="0.1" min="0.5" max="8" title="Gradient LSS S coefficient. b = S×ΔΦ/tG. Typical RP-LC value: 2–4."></div>
+    </div>
+    <div class="modal-row">
+      <div class="f"><label>Phase selectivity decay (γ)</label><input type="number" id="fPhaseGamma" value="3.0" step="0.1" min="0.5" max="8" title="Controls how fast phase differences (C18 vs C4) vanish for polar compounds. Higher γ = phase factor reaches 1.0 faster as polarity increases."></div>
+      <div class="f" style="display:flex;align-items:center"><span class="itx" style="margin:0">C18 factor: 1+(2.0−1)×e^(−γ×pol/1000)<br>C4 factor: 1+(0.6−1)×e^(−γ×pol/1000)</span></div>
     </div>
     <div class="div"></div>
     <div class="brow">
@@ -1018,24 +1034,30 @@ function getFactors(){
     sppGain:+document.getElementById('fSppGain').value||1.35,
     psaA:+document.getElementById('fPsaA').value||1680.5,      // isocratic prefactor
     psaB:+document.getElementById('fPsaB').value||0.7797,      // isocratic exponent
-    psaA_grad:+document.getElementById('fPsaAg').value||1920,  // gradient prefactor
-    psaB_grad:+document.getElementById('fPsaBg').value||0.816, // gradient exponent
-    solvS:+document.getElementById('fSolvS').value||2.3,
+    psaA_grad:+document.getElementById('fPsaAg').value||180,  // gradient prefactor
+    psaB_grad:+document.getElementById('fPsaBg').value||0.85, // gradient exponent
+    solvS:+document.getElementById('fSolvS').value||4.5,
     tempK:+document.getElementById('fTempK').value||0.008,
     sysTail:+document.getElementById('fSysTail').value||0.003,
     injFront:+document.getElementById('fInjFront').value||1.0,
     acidTail:+document.getElementById('fAcidTail').value||0.35,
     acidWidth:+document.getElementById('fAcidWidth').value||0.12,
     sppFront:+document.getElementById('fSppFront').value||1.4,
-    presBase:+document.getElementById('fPresBase').value||333
+    presBase:+document.getElementById('fPresBase').value||333,
+    polCubicAlpha:+document.getElementById('fPolCubicAlpha').value||2.0, // cubic polarity curvature (legacy, unused)
+    polLambda:+document.getElementById('fPolLambda').value||6.908,     // exp decay: ln(1000)=6.908
+    kMax:+document.getElementById('fKMax').value||724.9,               // k at pol=0, C8 anchor
+    phaseGamma:+document.getElementById('fPhaseGamma').value||3.0,     // phase selectivity decay
+    solvS_iso:+document.getElementById('fSolvSIso').value||6.9,        // S for isocratic (high→k→0 at 100%B)
+    solvS_grad:+document.getElementById('fSolvSGrad').value||3.0       // S for gradient LSS
   };
 }
 function openFactors(){document.getElementById('modalFactors').classList.add('on');}
 function closeFactors(){document.getElementById('modalFactors').classList.remove('on');}
 function resetFactors(){
-  const def={fN0:12000,fSppGain:1.35,fPsaA:1680.5,fPsaB:0.7797,fPsaAg:1920,fPsaBg:0.816,
-             fSolvS:2.3,fTempK:0.008,fSysTail:0.003,fInjFront:1.0,fAcidTail:0.35,
-             fAcidWidth:0.12,fSppFront:1.4,fPresBase:333};
+  const def={fN0:12000,fSppGain:1.35,fPsaA:1680.5,fPsaB:0.7797,fPsaAg:180,fPsaBg:0.85,
+             fSolvS:4.5,fTempK:0.008,fSysTail:0.003,fInjFront:1.0,fAcidTail:0.35,
+             fAcidWidth:0.12,fSppFront:1.4,fPresBase:333,fPolCubicAlpha:2.0,fPolLambda:6.908,fKMax:724.9,fPhaseGamma:3.0,fSolvSIso:6.9,fSolvSGrad:3.0};
   Object.entries(def).forEach(([k,v])=>{const el=document.getElementById(k);if(el)el.value=v;});
   notify('Factors reset to defaults');
 }
@@ -1281,52 +1303,78 @@ function mixViscosity(pctB,solv){
 function calcRetentionFactor(cpd, params){
   const F=getFactors();
 
-  // Polarity → k_base (unified model for both isocratic and gradient)
-  // Higher polarity = lower k = elutes earlier
-  const polEff=Math.max(1,cpd.pol);
-  const base_k=F.psaA_grad*Math.pow(polEff,-F.psaB_grad)*10; // ×10: apolar (pol≈0) elutes much later than polar
+  // ── ANCHOR-BASED EXPONENTIAL MODEL ──
+  // Calibrated from physical anchors (C8, 0→100%B, 10 min):
+  //   pol=0    → elutes at tR=10 min (k_max = 724.9)
+  //   pol=1000 → elutes near t0     (k ≈ 0)
+  //
+  // k_base(pol) = k_max × exp(-lambda × pol/1000)
+  // lambda = ln(1000) = 6.908  →  pol=1000 gives k = k_max/1000 ≈ 0
+  //
+  // Polarity-dependent phase factor (apolars are much more affected by phase):
+  //   phaseFactor(pol) = 1 + (phaseMax-1) × exp(-gamma × pol/1000)
+  //   C18: phaseMax=2.0, C8: phaseMax=1.0 (anchor), C4: phaseMax=0.6
+  //
+  // Isocratic: k0 = k_base × phaseFactor × tempFactor × exp(-S_iso × phi0)
+  //   S_iso = 6.9 → exp(-6.9)=0.001, so 100%B gives k≈0 for all compounds
+  //
+  // Gradient: uses S_grad = 3.0 (standard LSS value for RP-LC)
+  //   b = S_grad × ΔΦ / tG
+  //   tR_LSS = t0 + (1/b) × log10(2.3×k0×b + 1)
 
-  const phaseFactor={C18:1.0,C8:0.75,C4:0.55}[params.phase]||1.0;
-  const tempFactor=Math.max(0.05,1-(params.temp-25)*F.tempK);
-  const ss=SOLVENT_STRENGTH[params.orgSolvG]||1.0;
-  const S=ss*F.solvS;
-  const phi0=params.bInit/100;
-  const t0_real=params.colVm/params.flow; // real void time = Vm/F
-  const k0=base_k*phaseFactor*tempFactor*Math.exp(-S*phi0);
+  const pol = Math.max(0, Math.min(1000, cpd.pol));
+  const lambda = F.polLambda;   // default 6.908 = ln(1000)
+  const k_max  = F.kMax;        // default 724.9 (C8 anchor)
 
-  params._t0_real=t0_real;
-  params._b_steep=0;
-  params._post_grad=false;
+  // Base k from polarity (exponential decay)
+  const k_base = k_max * Math.exp(-lambda * pol / 1000);
 
-  const deltaB=params.deltaB||0;
+  // Polarity-dependent phase factor
+  const gamma = F.phaseGamma;   // default 3.0
+  const phaseMax = {C18:2.0, C8:1.0, C4:0.6}[params.phase] || 1.0;
+  const phaseFactor = 1 + (phaseMax - 1) * Math.exp(-gamma * pol / 1000);
 
-  if(deltaB<0.5){
-    // ── ISOCRATIC: deltaB=0, tR = t0*(1+k0) ──
-    return Math.max(0.001,k0);
+  const tempFactor = Math.max(0.05, 1 - (params.temp - 25) * F.tempK);
+  const t0_real = params.colVm / params.flow;
+
+  params._t0_real = t0_real;
+  params._b_steep = 0;
+  params._post_grad = false;
+
+  const deltaB = params.deltaB || 0;
+
+  if(deltaB < 0.5){
+    // ── ISOCRATIC ──
+    // S_iso is high (6.9) so that 100%B → k≈0 for all compounds
+    const S_iso = F.solvS_iso;
+    const phi0  = params.bInit / 100;
+    const k0    = k_base * phaseFactor * tempFactor * Math.exp(-S_iso * phi0);
+    return Math.max(0.001, k0);
   }
 
   // ── GRADIENT: LSS (Snyder) ──
-  // b = S × ΔΦ / tG — gradient steepness depends ONLY on %B range and time.
-  // Flow and column volume do NOT affect gradient strength — only t0 = Vm/F.
-  const phi1=Math.min(1.0,phi0+deltaB/100);
-  const deltaPhi=phi1-phi0;
-  const b_steep=S*deltaPhi/params.gradTime;
-  params._b_steep=b_steep;
-  params._k0=k0;
+  // Uses S_grad (lower than S_iso) — physically the gradient S
+  // is the slope of log k vs phi, typically 2-4 for RP-LC
+  const S_grad = F.solvS_grad;
+  const phi0   = params.bInit / 100;
+  const k0     = k_base * phaseFactor * tempFactor * Math.exp(-S_grad * phi0);
+  const phi1   = Math.min(1.0, phi0 + deltaB / 100);
+  const deltaPhi = phi1 - phi0;
+  const b_steep  = S_grad * deltaPhi / params.gradTime;
 
-  if(b_steep>0&&k0>0){
-    const tR_lss=t0_real+(1/b_steep)*Math.log10(2.3*k0*b_steep+1);
-    const phi_e=phi0+b_steep*(tR_lss-t0_real)/S;
-    // LSS formula gives correct tR even when phi_e > phi1:
-    // it extrapolates as if the gradient continued — monotonic and continuous.
-    // Only exclude compound if phi_e is unreasonably large (gradient far too weak).
-    const MAX_PHI_EXTRAPOLATION = 1.5; // allow up to 50% beyond bFinal
-    if(phi_e > phi1 + (phi1-phi0)*MAX_PHI_EXTRAPOLATION){
+  params._b_steep = b_steep;
+  params._k0 = k0;
+
+  if(b_steep > 0 && k0 > 0){
+    const tR_lss = t0_real + (1/b_steep) * Math.log10(2.3 * k0 * b_steep + 1);
+    const phi_e  = phi0 + b_steep * (tR_lss - t0_real) / S_grad;
+    const MAX_PHI_EXTRAPOLATION = 1.5;
+    if(phi_e > phi1 + (phi1 - phi0) * MAX_PHI_EXTRAPOLATION){
       return -1; // gradient far too weak — compound does not elute
     }
-    return Math.max(0.01,(tR_lss-t0_real)/t0_real);
+    return Math.max(0.01, (tR_lss - t0_real) / t0_real);
   }
-  return Math.max(0.001,k0); // fallback isocratic
+  return Math.max(0.001, k0);
 }
 
 function calcPlates(params){
